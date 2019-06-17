@@ -47,8 +47,6 @@ class Tree extends React.Component<TreeProps, TreeState> {
 		}
 	}
 
-
-
 	flattenTree(nodes: TreeNodeData[]): TreeNodeData[] {
 		nodes.forEach(p => p.level = 0);
 		const stack: TreeNodeData[] = [...nodes];

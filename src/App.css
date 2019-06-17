@@ -1,4 +1,8 @@
-
+.App {
+  margin: 100px;
+  border: 1px solid black;
+  width: 300px;
+}
 
 .App-logo {
   animation: App-logo-spin infinite 20s linear;

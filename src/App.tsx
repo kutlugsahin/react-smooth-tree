@@ -47,7 +47,7 @@ class App extends React.Component<Props, State> {
     return (
       <div className="App">
         <Tree
-          nodeHeight={20}
+          nodeHeight={26}
           items={this.state.items}
           onSelected={key => this.setState({ selectedKey: key })}
           selectedKey={this.state.selectedKey}

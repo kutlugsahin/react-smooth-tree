@@ -23,20 +23,20 @@ function renderNode(
 ) {
 	if (isLeaf) {
 		return (
-			<div>
+			<>
 				{title}
-			</div>
+			</>
 		);
 	}
 
 	if (isExpanded) {
 		return (
-			<div><b>V</b> {title}</div>
+			<><b>V</b> {title}</>
 		);
 	}
 
 	return (
-		<div><b>></b> {title}</div>
+		<><b>></b> {title}</>
 	);
 }
 
@@ -50,11 +50,11 @@ export const TreeNode = ({ isLeaf, id: key, title, level, onSelected, onExpanded
 	const { expandedKeys, selectedKey }: TreeNodeContext = useContext(TreeNodeContext);
 
 	const indentedStyle = {
-		paddingLeft: `${level * 10}px`,
+		paddingLeft: `${level * 20 + 5}px`,
 		height: `${height}px`,
 	};
 
-	const selectedClass = selectedKey === key ? 'selected' : '';
+	const selectedClass = selectedKey === key ? 'node selected' : 'node';
 
 	return (
 		<div
