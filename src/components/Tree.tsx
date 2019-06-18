@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
-import './tree.css';
 import { TreeNode, TreeNodeContext } from './TreeNode';
 export interface TreeNodeData {
 	id: string;
@@ -29,7 +28,6 @@ class Tree extends React.Component<TreeProps, TreeState> {
 	constructor(props: TreeProps) {
 		super(props);
 		this.renderRow = this.renderRow.bind(this);
-		this.renderNode = this.renderNode.bind(this);
 		this.flattenTree = this.flattenTree.bind(this);
 		this.onNodeToggleExpand = this.onNodeToggleExpand.bind(this);
 		this.state = {
@@ -81,18 +79,6 @@ class Tree extends React.Component<TreeProps, TreeState> {
 		);
 	}
 
-	renderNode(node: TreeNodeData): React.ReactNode {
-		return
-	}
-
-	renderTitle(title: React.ReactNode): React.ReactNode {
-		return <span></span>
-	}
-
-	// renderExpandIcon(isExpanded: boolean): React.ReactNode {
-
-	// }
-
 	onNodeToggleExpand(key: string) {
 		const isExpanded = this.props.expandedKeys.has(key);
 		const newSet = new Set(this.props.expandedKeys);
@@ -117,6 +103,7 @@ class Tree extends React.Component<TreeProps, TreeState> {
 					itemCount={this.state.flatNodes.length}
 					itemSize={this.props.nodeHeight || 30}
 					width={300}
+					itemKey={(index: number) => this.state.flatNodes[index].id}
 				>
 					{this.renderRow}
 				</List>

@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { createContext, useContext } from "react";
-import './tree.css';
+import { createContext, useContext, useState } from "react";
+import styles from './tree.module.scss';
 import { TreeNodeData } from './Tree';
+import classnames from 'classnames';
 
 export interface TreeNodeContext {
 	selectedKey: string;
@@ -14,31 +15,8 @@ const treeNodeContext = createContext<TreeNodeContext>({
 });
 export const TreeNodeContext = treeNodeContext;
 
-function renderNode(
-	title: React.ReactNode,
-	isExpanded: boolean,
-	isSelected: boolean,
-	isLeaf: boolean,
-	renderIcon?: () => React.ReactNode,
-) {
-	if (isLeaf) {
-		return (
-			<>
-				{title}
-			</>
-		);
-	}
 
-	if (isExpanded) {
-		return (
-			<><b>V</b> {title}</>
-		);
-	}
-
-	return (
-		<><b>></b> {title}</>
-	);
-}
+export type NodeRenderer = (props: TreeNodeProps) => React.ReactNode;
 
 export interface TreeNodeProps extends TreeNodeData {
 	onSelected: (node: string) => void;
@@ -46,28 +24,57 @@ export interface TreeNodeProps extends TreeNodeData {
 	height: number;
 }
 
-export const TreeNode = ({ isLeaf, id: key, title, level, onSelected, onExpanded, height }: TreeNodeProps) => {
+export const TreeNode = ({ isLeaf, id, title, level, onSelected, onExpanded, height, }: TreeNodeProps) => {
 	const { expandedKeys, selectedKey }: TreeNodeContext = useContext(TreeNodeContext);
+	const [isDraggedOver, setDraggedOver] = useState(false);
+
+	const isExpanded = expandedKeys.has(id);
+	const isSelected = selectedKey === id;
+
+	let autoExpandTimer: any;
+
+	React.useEffect(() => {
+		if (isDraggedOver && !isExpanded) {
+			autoExpandTimer = setTimeout(() => {
+				onExpanded(id);
+			}, 700);
+		}
+
+		return () => {
+			clearTimeout(autoExpandTimer);
+		}
+	}, [isDraggedOver])
 
 	const indentedStyle = {
 		paddingLeft: `${level * 20 + 5}px`,
 		height: `${height}px`,
 	};
 
-	const selectedClass = selectedKey === key ? 'node selected' : 'node';
+	const selectedClass = classnames({
+		[styles.node]: true,
+		[styles.selected]: selectedKey === id,
+		[styles.expanded]: expandedKeys.has(id),
+		[styles.draggedOver]: isDraggedOver,
+	})
+
+	const icon = isLeaf ? null : <span onClick={() => onExpanded(id)} className={styles.icon}>▶</span>;
 
 	return (
 		<div
+			draggable
+			onDragOver={(e) => {
+				e.preventDefault();
+				setDraggedOver(true);
+			}}
+			onDrop={() => setDraggedOver(false)}
+			onDragEnd={() => setDraggedOver(false)}
+			onDragLeave={() => { setDraggedOver(false) }}
 			style={indentedStyle}
 			className={selectedClass}
-			onClick={() => onSelected(key)}
-			onDoubleClick={() => onExpanded(key)}>
-			{renderNode(
-				title,
-				expandedKeys.has(key),
-				selectedKey === key,
-				false,
-			)}
+			onClick={() => onSelected(id)}
+			onDoubleClick={() => onExpanded(id)}>
+			{icon}
+			{title}
 		</div>
 	);
 
