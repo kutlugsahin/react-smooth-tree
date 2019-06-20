@@ -41,9 +41,9 @@ class App extends React.Component<Props, State> {
     this.state = {
       items: data,
       selectedKey: '',
-      expandedKeys: new Set(),
-      leafKeys: new Set(),
-      loadingKeys: new Set(),
+      expandedKeys: new Set(['0']),
+      leafKeys: new Set(['1']),
+      loadingKeys: new Set(['2']),
     };
   }
   render() {

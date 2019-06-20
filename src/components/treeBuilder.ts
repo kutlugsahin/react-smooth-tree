@@ -2,6 +2,7 @@ import { TreeItem, TreeNodeItem, TreeProps, TreeNodeItemEvents } from "./interfa
 
 export interface TreeBuilder {
 	flatNodes: TreeNodeItem[];
+	indexOf: (id: string) => number;
 }
 
 export interface TreeBuilderFunction {
@@ -47,8 +48,13 @@ export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], { onToggleEx
 		}
 	}
 
+	function indexOf(id: string) {
+		return map.findIndex(p => p.id === id);
+	}
+
 
 	return {
 		flatNodes: map,
+		indexOf,
 	}
 }

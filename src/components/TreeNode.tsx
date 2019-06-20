@@ -15,23 +15,23 @@ export const TreeNodeContext = treeNodeContext;
 
 
 enum TreeNodeState {
-	leaf = 0,
-	loading = 1,
-	collapsed = 2,
-	expanded = 4,
+	Leaf = 0,
+	Loading = 1,
+	Collapsed = 2,
+	Expanded = 4,
 }
 
 function getTreeNodeState(id: string, { loadingKeys, leafKeys, expandedKeys }: TreeKeyProps) {
 	if (loadingKeys.has(id))
-		return TreeNodeState.loading;
+		return TreeNodeState.Loading;
 
 	if (leafKeys.has(id))
-		return TreeNodeState.leaf;
+		return TreeNodeState.Leaf;
 
 	if (expandedKeys.has(id))
-		return TreeNodeState.expanded;
+		return TreeNodeState.Expanded;
 
-	return TreeNodeState.collapsed;
+	return TreeNodeState.Collapsed;
 }
 
 export const TreeNode = React.memo(({ id, title, level, onSelected, onToggleExpanded, onKeyDown }: TreeNodeItem) => {
@@ -44,9 +44,9 @@ export const TreeNode = React.memo(({ id, title, level, onSelected, onToggleExpa
 	let autoExpandTimer: any;
 
 	React.useEffect(() => {
-		if (isDraggedOver && nodeState !== TreeNodeState.expanded) {
+		if (isDraggedOver && nodeState !== TreeNodeState.Expanded) {
 			autoExpandTimer = setTimeout(() => {
-				onToggleExpanded(id);
+				onToggle();
 			}, 700);
 		}
 
@@ -55,6 +55,12 @@ export const TreeNode = React.memo(({ id, title, level, onSelected, onToggleExpa
 		}
 	}, [isDraggedOver])
 
+	const onToggle = () => {
+		if (nodeState & (TreeNodeState.Collapsed | TreeNodeState.Expanded)) {
+			onToggleExpanded(id);
+		}
+	};
+
 	const indentedStyle = {
 		paddingLeft: `${level * 20 + 5}px`,
 		height: `${height}px`,
@@ -62,7 +68,8 @@ export const TreeNode = React.memo(({ id, title, level, onSelected, onToggleExpa
 
 	const selectedClass = classnames({
 		[styles.node]: true,
-		[styles.expanded]: nodeState === TreeNodeState.expanded,
+		[styles.expanded]: nodeState === TreeNodeState.Expanded,
+		[styles.loading]: nodeState === TreeNodeState.Loading
 	});
 
 	const titleWrapper = classnames({
@@ -74,17 +81,17 @@ export const TreeNode = React.memo(({ id, title, level, onSelected, onToggleExpa
 	let icon = null;
 
 	switch (nodeState) {
-		case TreeNodeState.collapsed:
-			icon = <span onClick={() => onToggleExpanded(id)} className={styles.icon}>▶</span>;
+		case TreeNodeState.Collapsed:
+			icon = <span onClick={onToggle} className={styles.icon}>▶</span>;
 			break;
-		case TreeNodeState.expanded:
-			icon = <span onClick={() => onToggleExpanded(id)} className={styles.icon}>▶</span>;
+		case TreeNodeState.Expanded:
+			icon = <span onClick={onToggle} className={styles.icon}>▶</span>;
 			break;
-		case TreeNodeState.leaf:
-			icon = <span onClick={() => onToggleExpanded(id)} className={styles.icon}>▶</span>;
+		case TreeNodeState.Leaf:
+			icon = <span onClick={onToggle} className={styles.icon}>▶</span>;
 			break;
-		case TreeNodeState.loading:
-			icon = <span onClick={() => onToggleExpanded(id)} className={styles.icon}>▶</span>;
+		case TreeNodeState.Loading:
+			icon = <span onClick={onToggle} className={styles.icon}>◠</span>;
 			break;
 		default:
 			break;
@@ -107,7 +114,7 @@ export const TreeNode = React.memo(({ id, title, level, onSelected, onToggleExpa
 			{icon}
 			<div className={titleWrapper}
 				onClick={() => !isSelected && onSelected(id)}
-				onDoubleClick={() => onToggleExpanded(id)}>
+				onDoubleClick={onToggle}>
 				{title}
 			</div>
 		</div>

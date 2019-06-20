@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
+import { FixedSizeList as List, ListChildComponentProps, FixedSizeList } from 'react-window';
 import { TreeNodeContext, TreeNode } from './TreeNode';
 import { TreeProps } from './interface';
 import { treeBuilder, TreeBuilder } from './treeBuilder';
 
-const Tree = (props: TreeProps) => {
+const Tree = React.forwardRef((props: TreeProps, ref) => {
 	const [treeStructure, setTreeStructure] = React.useState<TreeBuilder | undefined>(undefined);
+	const listRef: React.MutableRefObject<FixedSizeList | undefined> = React.useRef<FixedSizeList | undefined>();
 
 	const onNodeToggleExpand = React.useCallback((key: string) => {
 		const isExpanded = props.expandedKeys.has(key);
@@ -17,7 +18,7 @@ const Tree = (props: TreeProps) => {
 			newSet.add(key);
 		}
 		props.onExpandedKeysChanged(newSet);
-	}, [props.expandedKeys, props.onExpandedKeysChanged]);
+	}, [props.expandedKeys, props.onExpandedKeysChanged, treeStructure]);
 
 	const onNodeKeyDown = React.useCallback((id: string, event: React.KeyboardEvent) => {
 		switch (event.keyCode) {
@@ -56,7 +57,15 @@ const Tree = (props: TreeProps) => {
 			onKeyDown: onNodeKeyDown,
 			onSelected: props.onSelected,
 		}, props))
-	}, [props.expandedKeys, props.items, onNodeToggleExpand, onNodeKeyDown, props.onSelected])
+	}, [props.expandedKeys, props.items, onNodeToggleExpand, onNodeKeyDown, props.onSelected]);
+
+	React.useImperativeHandle(ref, () => ({
+		scrollTo: (id: string) => {
+			if (listRef.current && treeStructure) {
+				listRef.current.scrollToItem(treeStructure.indexOf(id))
+			}
+		},
+	}), [treeStructure]);
 
 	if (treeStructure) {
 		return (
@@ -68,6 +77,7 @@ const Tree = (props: TreeProps) => {
 				height: props.nodeHeight || 30
 			}}>
 				<List
+					ref={listRef as any}
 					overscanCount={20}
 					height={500}
 					itemCount={treeStructure.flatNodes.length}
@@ -81,6 +91,6 @@ const Tree = (props: TreeProps) => {
 	}
 
 	return null;
-}
+})
 
 export default React.memo(Tree);
