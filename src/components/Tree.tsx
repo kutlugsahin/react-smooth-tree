@@ -18,7 +18,7 @@ const Tree = React.forwardRef((props: TreeProps, ref) => {
 			newSet.add(key);
 		}
 		props.onExpandedKeysChanged(newSet);
-	}, [props.expandedKeys, props.onExpandedKeysChanged, treeStructure]);
+	}, [props.expandedKeys, props.onExpandedKeysChanged]);
 
 	const onNodeKeyDown = React.useCallback((id: string, event: React.KeyboardEvent) => {
 		switch (event.keyCode) {
