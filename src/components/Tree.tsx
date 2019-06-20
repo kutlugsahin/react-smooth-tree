@@ -1,115 +1,86 @@
 import * as React from 'react';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
-import { TreeNode, TreeNodeContext } from './TreeNode';
-export interface TreeNodeData {
-	id: string;
-	title: React.ReactNode;
-	children: TreeNodeData[];
-	level: number;
-	isLeaf?: boolean;
-}
+import { TreeNodeContext, TreeNode } from './TreeNode';
+import { TreeProps } from './interface';
+import { treeBuilder, TreeBuilder } from './treeBuilder';
 
-export interface TreeProps {
-	items: TreeNodeData[];
-	selectedKey: string;
-	onSelected: (key: string) => void;
-	expandedKeys: Set<string>;
-	onExpanded: (keySet: Set<string>) => void;
-	renderIcon?: (toggleExpand: () => void) => React.ReactNode;
-	renderNode?: (node: TreeNodeData) => React.ReactNode;
-	nodeHeight?: number;
-}
+const Tree = (props: TreeProps) => {
+	const [treeStructure, setTreeStructure] = React.useState<TreeBuilder | undefined>(undefined);
 
-interface TreeState {
-	flatNodes: TreeNodeData[];
-}
-
-class Tree extends React.Component<TreeProps, TreeState> {
-	constructor(props: TreeProps) {
-		super(props);
-		this.renderRow = this.renderRow.bind(this);
-		this.flattenTree = this.flattenTree.bind(this);
-		this.onNodeToggleExpand = this.onNodeToggleExpand.bind(this);
-		this.state = {
-			flatNodes: this.flattenTree(props.items),
-		};
-	}
-
-	componentDidUpdate(prevProps: TreeProps) {
-		if (this.props.items !== prevProps.items ||
-			this.props.expandedKeys !== prevProps.expandedKeys ||
-			this.props.selectedKey !== prevProps.selectedKey) {
-			this.setState({
-				flatNodes: this.flattenTree(this.props.items),
-			});
-		}
-	}
-
-	flattenTree(nodes: TreeNodeData[]): TreeNodeData[] {
-		nodes.forEach(p => p.level = 0);
-		const stack: TreeNodeData[] = [...nodes];
-
-		const map: TreeNodeData[] = [];
-
-		while (stack.length) {
-			const current = stack.shift()!;
-			map.push(current);
-			if (this.props.expandedKeys.has(current.id)) {
-				for (let i = current.children.length - 1; i >= 0; i--) {
-					const child = current.children[i];
-					child.level = current.level + 1;
-					stack.unshift(child);
-				}
-			}
-		}
-
-		return map;
-	}
-
-	renderRow({ index, style }: ListChildComponentProps) {
-		const node = this.state.flatNodes[index];
-
-		return (
-			<div style={style}>
-				<TreeNode {...node}
-					onExpanded={this.onNodeToggleExpand}
-					onSelected={this.props.onSelected}
-					height={this.props.nodeHeight || 30}/>
-			</div>
-		);
-	}
-
-	onNodeToggleExpand(key: string) {
-		const isExpanded = this.props.expandedKeys.has(key);
-		const newSet = new Set(this.props.expandedKeys);
+	const onNodeToggleExpand = React.useCallback((key: string) => {
+		const isExpanded = props.expandedKeys.has(key);
+		const newSet = new Set(props.expandedKeys);
 
 		if (isExpanded) {
 			newSet.delete(key);
 		} else {
 			newSet.add(key);
 		}
-		this.props.onExpanded(newSet);
-	}
+		props.onExpandedKeysChanged(newSet);
+	}, [props.expandedKeys, props.onExpandedKeysChanged]);
 
-	render() {
+	const onNodeKeyDown = React.useCallback((id: string, event: React.KeyboardEvent) => {
+		switch (event.keyCode) {
+			case 8: {
+				if (event.shiftKey) {
+					// go up
+				} else {
+					// go down
+				}
+			}
+				break;
+			default:
+				break;
+		}
+	}, []);
+
+	const renderNode = React.useCallback(({ index, style }: ListChildComponentProps) => {
+		if (treeStructure) {
+			const node = treeStructure.flatNodes[index];
+			return (
+				<div style={style}>
+					<TreeNode {...node}
+						onToggleExpanded={onNodeToggleExpand}
+						onSelected={props.onSelected}
+						onKeyDown={onNodeKeyDown}
+					/>
+				</div>
+			);
+		}
+		return null;
+	}, [treeStructure, onNodeToggleExpand, props.onSelected, onNodeKeyDown]);
+
+	React.useEffect(() => {
+		setTreeStructure(treeBuilder(props.items, {
+			onToggleExpanded: onNodeToggleExpand,
+			onKeyDown: onNodeKeyDown,
+			onSelected: props.onSelected,
+		}, props))
+	}, [props.expandedKeys, props.items, onNodeToggleExpand, onNodeKeyDown, props.onSelected])
+
+	if (treeStructure) {
 		return (
 			<TreeNodeContext.Provider value={{
-				expandedKeys: this.props.expandedKeys,
-				selectedKey: this.props.selectedKey,
+				expandedKeys: props.expandedKeys,
+				selectedKey: props.selectedKey,
+				loadingKeys: props.loadingKeys,
+				leafKeys: props.leafKeys,
+				height: props.nodeHeight || 30
 			}}>
 				<List
 					overscanCount={20}
 					height={500}
-					itemCount={this.state.flatNodes.length}
-					itemSize={this.props.nodeHeight || 30}
-					width={300}
-					itemKey={(index: number) => this.state.flatNodes[index].id}
-				>
-					{this.renderRow}
-				</List>
+					itemCount={treeStructure.flatNodes.length}
+					itemSize={props.nodeHeight || 30}
+					width={'auto'}
+					itemKey={(index: number) => treeStructure.flatNodes[index].id}
+					children={renderNode}
+				/>
 			</TreeNodeContext.Provider>
 		)
 	}
+
+	return null;
 }
 
 export default React.memo(Tree);

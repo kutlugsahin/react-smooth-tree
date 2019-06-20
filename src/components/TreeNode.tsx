@@ -1,42 +1,52 @@
 import * as React from 'react';
 import { createContext, useContext, useState } from "react";
 import styles from './tree.module.scss';
-import { TreeNodeData } from './Tree';
 import classnames from 'classnames';
+import { TreeKeyProps, TreeNodeItem, TreeNodeContextProps } from "./interface";
 
-export interface TreeNodeContext {
-	selectedKey: string;
-	expandedKeys: Set<string>;
-}
-
-const treeNodeContext = createContext<TreeNodeContext>({
+const treeNodeContext = createContext<TreeNodeContextProps>({
 	expandedKeys: new Set(),
 	selectedKey: '',
+	loadingKeys: new Set(),
+	leafKeys: new Set(),
+	height: 30,
 });
 export const TreeNodeContext = treeNodeContext;
 
 
-export type NodeRenderer = (props: TreeNodeProps) => React.ReactNode;
-
-export interface TreeNodeProps extends TreeNodeData {
-	onSelected: (node: string) => void;
-	onExpanded: (node: string) => void;
-	height: number;
+enum TreeNodeState {
+	leaf = 0,
+	loading = 1,
+	collapsed = 2,
+	expanded = 4,
 }
 
-export const TreeNode = ({ isLeaf, id, title, level, onSelected, onExpanded, height, }: TreeNodeProps) => {
-	const { expandedKeys, selectedKey }: TreeNodeContext = useContext(TreeNodeContext);
-	const [isDraggedOver, setDraggedOver] = useState(false);
+function getTreeNodeState(id: string, { loadingKeys, leafKeys, expandedKeys }: TreeKeyProps) {
+	if (loadingKeys.has(id))
+		return TreeNodeState.loading;
 
-	const isExpanded = expandedKeys.has(id);
-	const isSelected = selectedKey === id;
+	if (leafKeys.has(id))
+		return TreeNodeState.leaf;
+
+	if (expandedKeys.has(id))
+		return TreeNodeState.expanded;
+
+	return TreeNodeState.collapsed;
+}
+
+export const TreeNode = React.memo(({ id, title, level, onSelected, onToggleExpanded, onKeyDown }: TreeNodeItem) => {
+	const { height, ...keys }: TreeNodeContextProps = useContext(TreeNodeContext);
+	const [isDraggedOver, setDraggedOver] = useState(false);
+	const isSelected = id === keys.selectedKey;
+
+	const nodeState = getTreeNodeState(id, keys);
 
 	let autoExpandTimer: any;
 
 	React.useEffect(() => {
-		if (isDraggedOver && !isExpanded) {
+		if (isDraggedOver && nodeState !== TreeNodeState.expanded) {
 			autoExpandTimer = setTimeout(() => {
-				onExpanded(id);
+				onToggleExpanded(id);
 			}, 700);
 		}
 
@@ -52,12 +62,33 @@ export const TreeNode = ({ isLeaf, id, title, level, onSelected, onExpanded, hei
 
 	const selectedClass = classnames({
 		[styles.node]: true,
-		[styles.selected]: selectedKey === id,
-		[styles.expanded]: expandedKeys.has(id),
-		[styles.draggedOver]: isDraggedOver,
-	})
+		[styles.expanded]: nodeState === TreeNodeState.expanded,
+	});
 
-	const icon = isLeaf ? null : <span onClick={() => onExpanded(id)} className={styles.icon}>▶</span>;
+	const titleWrapper = classnames({
+		[styles.titleWrapper]: true,
+		[styles.draggedOver]: isDraggedOver,
+		[styles.selected]: isSelected,
+	});
+
+	let icon = null;
+
+	switch (nodeState) {
+		case TreeNodeState.collapsed:
+			icon = <span onClick={() => onToggleExpanded(id)} className={styles.icon}>▶</span>;
+			break;
+		case TreeNodeState.expanded:
+			icon = <span onClick={() => onToggleExpanded(id)} className={styles.icon}>▶</span>;
+			break;
+		case TreeNodeState.leaf:
+			icon = <span onClick={() => onToggleExpanded(id)} className={styles.icon}>▶</span>;
+			break;
+		case TreeNodeState.loading:
+			icon = <span onClick={() => onToggleExpanded(id)} className={styles.icon}>▶</span>;
+			break;
+		default:
+			break;
+	}
 
 	return (
 		<div
@@ -71,12 +102,14 @@ export const TreeNode = ({ isLeaf, id, title, level, onSelected, onExpanded, hei
 			onDragLeave={() => { setDraggedOver(false) }}
 			style={indentedStyle}
 			className={selectedClass}
-			onClick={() => onSelected(id)}
-			onDoubleClick={() => onExpanded(id)}>
+			onKeyDown={e => onKeyDown(id, e)}
+		>
 			{icon}
-			{title}
+			<div className={titleWrapper}
+				onClick={() => !isSelected && onSelected(id)}
+				onDoubleClick={() => onToggleExpanded(id)}>
+				{title}
+			</div>
 		</div>
 	);
-
-
-}
+});

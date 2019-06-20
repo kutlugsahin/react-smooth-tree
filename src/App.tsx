@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
-import Tree, { TreeNodeData } from './components/Tree';
+import Tree from './components/Tree';
+import { TreeItem } from './components/interface';
 
 interface Props {
   
@@ -9,28 +10,28 @@ interface Props {
 
 
 interface State {
-  items: TreeNodeData[];
+  items: TreeItem[];
   selectedKey: string;
   expandedKeys: Set<string>;
+  leafKeys: Set<string>;
+  loadingKeys: Set<string>;
 }
 
-const data: TreeNodeData[] = [];
+const data: TreeItem[] = [];
 
 for (let i = 0; i < 1000; i++) {
-  const ch: TreeNodeData[] = [];
+  const ch: TreeItem[] = [];
   for (let j = 0; j < 10; j++) {
     ch.push({
       id: `${i}-${j}`,
-      title: `item ${i} children ${j}`,
+      title: `item ${i} klsdjfskl dfsdklfjsdflk sfjdlksd fjslkdfj sldf children ${j}`,
       children: [],
-      level: 0,
     });
   }
   data.push({
     id: `${i}`,
     title: `item ${i}`,
     children: ch,
-    level: 0,
   })
 }
 
@@ -41,6 +42,8 @@ class App extends React.Component<Props, State> {
       items: data,
       selectedKey: '',
       expandedKeys: new Set(),
+      leafKeys: new Set(),
+      loadingKeys: new Set(),
     };
   }
   render() {
@@ -52,7 +55,12 @@ class App extends React.Component<Props, State> {
           onSelected={key => this.setState({ selectedKey: key })}
           selectedKey={this.state.selectedKey}
           expandedKeys={this.state.expandedKeys}
-          onExpanded={e => this.setState({ expandedKeys:e })}
+          onExpandedKeysChanged={e => this.setState({ expandedKeys: e })}
+          leafKeys={this.state.leafKeys}
+          onLeafKeysChanged={leafKeys => this.setState({ leafKeys })}
+          loadingKeys={this.state.loadingKeys}
+          onLoadingKeysChanged={loadingKeys => this.setState({ loadingKeys })}
+          onItemsChanged={() => {}}
         />
       </div>
     );

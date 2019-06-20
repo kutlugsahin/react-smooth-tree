@@ -1,26 +1,43 @@
-
 .node {
 	user-select: none;
 	display: flex;
 	align-items: center;
-
+	white-space: nowrap;
+	align-items: stretch;
+	
 	.icon {
+		align-self: center;
 		transition: transform 0.2s ease;
-		margin-right: 8px;
+		margin-right: 6px;
+		color: #789;
+		cursor: pointer;
 	}
-
-	&.selected {
-	background-color: aqua;
-}
-
+	
 	&.expanded {
 		.icon {
 			transform: rotateZ(90deg);
 		}
 	}
+	
+	.titleWrapper {
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		padding: 0 6px 0 4px;
+		border-radius: 4px;
+		
 
-	&.draggedOver {
-		background-color: cornsilk;
+		&.draggedOver {
+			background-color: cornsilk;
+		}
+
+		&:hover {
+			background-color: rgb(211, 238, 238);
+		}
+
+		&.selected {
+			background-color: rgb(122, 226, 226);
+		}
 	}
 }
 
