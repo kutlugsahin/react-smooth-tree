@@ -2,7 +2,7 @@
   margin: 100px;
   border: 1px solid black;
   width: 300px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .App-logo {

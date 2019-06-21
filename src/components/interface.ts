@@ -12,6 +12,20 @@ export interface TreeNodeItemEvents {
 
 export interface TreeNodeItem extends TreeItem, TreeNodeItemEvents {
 	level: number;
+	item: TreeItem;
+}
+
+export enum NodeState {
+	Leaf = 0,
+	Loading = 1,
+	Collapsed = 2,
+	Expanded = 4,
+}
+
+export interface TreeNodeProps extends TreeNodeItem {
+	nodeState: NodeState;
+	isSelected: boolean;
+	height: number;
 }
 
 export interface TreeKeyProps {
@@ -38,5 +52,5 @@ export interface TreeProps extends TreeKeyProps, TreeKeyChangedProps {
 	renderIcon?: (toggleExpand: () => void) => React.ReactNode;
 	renderNode?: (node: TreeItem) => React.ReactNode;
 	nodeHeight?: number;
-	load?: (id: string) => Promise<TreeItem>;
+	load?: (id: string) => Promise<TreeItem[]>;
 }

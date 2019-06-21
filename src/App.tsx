@@ -19,13 +19,12 @@ interface State {
 
 const data: TreeItem[] = [];
 
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 1; i++) {
   const ch: TreeItem[] = [];
-  for (let j = 0; j < 10; j++) {
+  for (let j = 0; j < 1; j++) {
     ch.push({
       id: `${i}-${j}`,
       title: `item ${i} klsdjfskl dfsdklfjsdflk sfjdlksd fjslkdfj sldf children ${j}`,
-      children: [],
     });
   }
   data.push({
@@ -50,7 +49,7 @@ class App extends React.Component<Props, State> {
     return (
       <div className="App">
         <Tree
-          nodeHeight={26}
+          nodeHeight={24}
           items={this.state.items}
           onSelected={key => this.setState({ selectedKey: key })}
           selectedKey={this.state.selectedKey}
@@ -60,7 +59,17 @@ class App extends React.Component<Props, State> {
           onLeafKeysChanged={leafKeys => this.setState({ leafKeys })}
           loadingKeys={this.state.loadingKeys}
           onLoadingKeysChanged={loadingKeys => this.setState({ loadingKeys })}
-          onItemsChanged={() => {}}
+          onItemsChanged={(items) => { this.setState({items}) }}
+          load={(id: string) => {
+            return new Promise((res) => {
+              setTimeout(() => {
+                res(Array(10).fill(true).map((_, i: number) => ({
+                  id: `${id}-${i}`,
+                  title: `item ${id}-${i}`,
+                } as TreeItem)))
+              }, 1000);
+            });
+          }}
         />
       </div>
     );
