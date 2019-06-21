@@ -174,7 +174,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 						event.preventDefault();
 						this.setLoading(this.props.selectedKey);
 						this.setExpanded(this.props.selectedKey, true);
-					}					
+					}
 					break;
 				default:
 					break;
