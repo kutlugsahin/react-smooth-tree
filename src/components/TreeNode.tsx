@@ -29,6 +29,12 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 		}
 	}
 
+	public componentDidMount() {
+		if (this.props.nodeState === NodeState.Loading) {
+			this.props.onRequestLoad(this.props.id);
+		}
+	}
+
 	public componentDidUpdate(prevProps: TreeNodeProps, prevState: TreeNodeState) {
 		if (!prevState.isDraggedOver && this.state.isDraggedOver) {
 			this.dragOverExpandTimer = setTimeout(() => {
@@ -37,14 +43,18 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 		} else if (prevState.isDraggedOver && !this.state.isDraggedOver) {
 			clearTimeout(this.dragOverExpandTimer);
 		}
+
+		if (prevProps.nodeState !== NodeState.Loading && this.props.nodeState === NodeState.Loading) {
+			this.props.onRequestLoad(this.props.id);
+		}
 	}
 
 	render() {
 		const { level, id, onSelected, onKeyDown, title, isSelected, height } = this.props;
 		const { isDraggedOver } = this.state;
 
-		const indentedStyle = {
-			paddingLeft: `${level * 20 + 5}px`,
+		const nodeRowStyle = {
+			paddingLeft: `${level * 20}px`,
 			height: `${height}px`,
 		};
 
@@ -54,6 +64,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 			[styles.loading]: this.props.nodeState === NodeState.Loading
 		});
 
+		const titleWrapperHeight = `${height - 4}px`;
 		const titleWrapper = classnames({
 			[styles.titleWrapper]: true,
 			[styles.draggedOver]: isDraggedOver,
@@ -64,13 +75,13 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 
 		switch (this.props.nodeState) {
 			case NodeState.Collapsed:
-				icon = <span onClick={this.onToggle} className={styles.icon}>▶</span>;
+				icon = <span onClick={this.onToggle} className={styles.icon}>▸</span>;
 				break;
 			case NodeState.Expanded:
-				icon = <span onClick={this.onToggle} className={styles.icon}>▶</span>;
+				icon = <span onClick={this.onToggle} className={styles.icon}>▸</span>;
 				break;
 			case NodeState.Leaf:
-				icon = <span onClick={this.onToggle} className={styles.icon}>▶</span>;
+				icon = <span className={styles.icon}></span>;
 				break;
 			case NodeState.Loading:
 				icon = <span onClick={this.onToggle} className={styles.icon}>◠</span>;
@@ -79,22 +90,28 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 				break;
 		}
 
+		const dragProps = {
+			draggable: true,
+			onDragOver: (e: any) => {
+				e.preventDefault();
+				this.setDraggedOver(true);
+			},
+			onDrop: () => this.setDraggedOver(false),
+			onDragEnd: () => this.setDraggedOver(false),
+			onDragLeave: () => { this.setDraggedOver(false) },
+		}
+
 		return (
 			<div
-				draggable
-				onDragOver={(e) => {
-					e.preventDefault();
-					this.setDraggedOver(true);
-				}}
-				onDrop={() => this.setDraggedOver(false)}
-				onDragEnd={() => this.setDraggedOver(false)}
-				onDragLeave={() => { this.setDraggedOver(false) }}
-				style={indentedStyle}
+				style={nodeRowStyle}
 				className={selectedClass}
 				onKeyDown={e => onKeyDown(id, e)}
 			>
 				{icon}
-				<div className={titleWrapper}
+				<div
+					className={titleWrapper}
+					{...dragProps}
+					style={{ height: titleWrapperHeight, lineHeight: titleWrapperHeight }}
 					onClick={() => !isSelected && onSelected(id)}
 					onDoubleClick={this.onToggle}>
 					{title}

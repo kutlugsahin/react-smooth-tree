@@ -8,7 +8,6 @@ const TreeNodeContext = React.createContext<TreeNodeContextProps>({
 	expandedKeys: new Set(),
 	selectedKey: '',
 	loadingKeys: new Set(),
-	leafKeys: new Set(),
 	height: 30,
 });
 
@@ -29,6 +28,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 		this.loadItems = this.loadItems.bind(this);
 		this.renderNode = this.renderNode.bind(this);
 		this.getItemKey = this.getItemKey.bind(this);
+		this.onRequestLoad = this.onRequestLoad.bind(this);
 		this.getTreeNodeState = this.getTreeNodeState.bind(this);
 
 		this.state = {
@@ -43,6 +43,16 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	public componentDidUpdate(prevProps: TreeProps) {
 		if (prevProps.items !== this.props.items || prevProps.expandedKeys !== this.props.expandedKeys) {
 			this.setTreeStructure();
+		}
+	}
+
+	public scrollTo(id: string) {
+		if (this.state.treeStructure && this.listRef.current) {
+			const index = this.state.treeStructure.indexOf(id);
+
+			if (index > -1) {
+				this.listRef.current.scrollToItem(index);
+			}
 		}
 	}
 
@@ -66,6 +76,15 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 		const expandedKeySet = new Set(this.props.expandedKeys);
 		expanded ? expandedKeySet.add(id) : expandedKeySet.delete(id);
 		this.props.onExpandedKeysChanged(expandedKeySet);
+	}
+
+	private onRequestLoad(id: string): void {
+		if (this.state.treeStructure) {
+			const node = this.state.treeStructure.getNodeById(id);
+			if (node) {
+				this.loadItems(node);
+			}
+		}
 	}
 
 	private loadItems(node: TreeNodeItem) {
@@ -115,12 +134,12 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 		}
 	}
 
-	private getTreeNodeState(id: string): NodeState {
-		const { loadingKeys, leafKeys, expandedKeys } = this.props;
+	private getTreeNodeState(id: string, children?: TreeItem[]): NodeState {
+		const { loadingKeys, expandedKeys } = this.props;
 		if (loadingKeys.has(id))
 			return NodeState.Loading;
 
-		if (leafKeys.has(id))
+		if (children && children.length === 0)
 			return NodeState.Leaf;
 
 		if (expandedKeys.has(id))
@@ -141,9 +160,10 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 									onToggleExpanded={this.onNodeToggleExpand}
 									onSelected={this.props.onSelected}
 									onKeyDown={this.onNodeKeyDown}
-									nodeState={this.getTreeNodeState(node.id)}
+									nodeState={this.getTreeNodeState(node.id, node.children)}
 									isSelected={context.selectedKey === node.id}
 									height={context.height}
+									onRequestLoad={this.onRequestLoad}
 								/>
 							)
 						}}
@@ -160,13 +180,12 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 
 	render() {
 		if (this.state.treeStructure) {
-			const { expandedKeys, selectedKey, loadingKeys, leafKeys, nodeHeight } = this.props;
+			const { expandedKeys, selectedKey, loadingKeys, nodeHeight } = this.props;
 			return (
 				<TreeNodeContext.Provider value={{
 					expandedKeys,
 					selectedKey,
 					loadingKeys,
-					leafKeys,
 					height: nodeHeight || 30
 				}}>
 					<List

@@ -3,14 +3,19 @@
 	display: flex;
 	align-items: center;
 	white-space: nowrap;
-	align-items: stretch;
 	
 	.icon {
 		align-self: center;
 		transition: transform 0.2s ease;
-		margin-right: 6px;
-		color: #789;
+		color: #567;
 		cursor: pointer;
+		display: inline-block;
+		width: 24px;
+		height: 24px;
+		vertical-align: middle;
+		text-align: center;
+		line-height: 24px;
+		flex-shrink: 0;
 	}
 	
 	&.expanded {
@@ -41,12 +46,15 @@
 		cursor: pointer;
 		display: flex;
 		align-items: center;
-		padding: 0 12px 0 12px;
+		padding: 0 6px 0 6px;
 		border-radius: 4px;
-		
+		border: 1px solid transparent;
+		flex-shrink: 0;	
 
 		&.draggedOver {
-			background-color: cornsilk;
+			background-color: greenyellow;
+			border: 1px solid green;
+			border-radius: 0;
 		}
 
 		&:hover {
