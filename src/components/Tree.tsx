@@ -143,6 +143,9 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	private onKeyDown(event: React.KeyboardEvent) {
 		if (this.props.selectedKey) {
 			switch (event.keyCode) {
+				case 8:
+					this.selectParent();
+					break;
 				case 9: {
 					event.preventDefault();
 					if (event.shiftKey) {
@@ -161,13 +164,17 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 					this.selectNext();
 					break;
 				case 37:
-					event.preventDefault();
-					this.setExpanded(this.props.selectedKey, false);
+					if (this.props.expandedKeys.has(this.props.selectedKey)) {
+						event.preventDefault();
+						this.setExpanded(this.props.selectedKey, false);
+					}
 					break;
 				case 39:
-					event.preventDefault();
-					this.setLoading(this.props.selectedKey);
-					this.setExpanded(this.props.selectedKey, true);
+					if (!this.props.expandedKeys.has(this.props.selectedKey)) {
+						event.preventDefault();
+						this.setLoading(this.props.selectedKey);
+						this.setExpanded(this.props.selectedKey, true);
+					}					
 					break;
 				default:
 					break;
