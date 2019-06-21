@@ -169,6 +169,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 						this.setExpanded(this.props.selectedKey, false);
 					}
 					break;
+				case 13:
 				case 39:
 					if (!this.props.expandedKeys.has(this.props.selectedKey)) {
 						event.preventDefault();
