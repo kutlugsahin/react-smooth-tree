@@ -37,9 +37,11 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 
 	public componentDidUpdate(prevProps: TreeNodeProps, prevState: TreeNodeState) {
 		if (!prevState.isDraggedOver && this.state.isDraggedOver) {
-			this.dragOverExpandTimer = setTimeout(() => {
-				this.onToggle();
-			}, 700);
+			if (this.props.nodeState === NodeState.Collapsed) {
+				this.dragOverExpandTimer = setTimeout(() => {
+					this.onToggle();
+				}, 700);
+			}
 		} else if (prevState.isDraggedOver && !this.state.isDraggedOver) {
 			clearTimeout(this.dragOverExpandTimer);
 		}
@@ -50,7 +52,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 	}
 
 	render() {
-		const { level, id, onSelected, onKeyDown, title, isSelected, height } = this.props;
+		const { level, id, onSelected, title, isSelected, height } = this.props;
 		const { isDraggedOver } = this.state;
 
 		const nodeRowStyle = {
@@ -97,7 +99,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 				this.setDraggedOver(true);
 			},
 			onDrop: () => this.setDraggedOver(false),
-			onDragEnd: () => this.setDraggedOver(false),
+			onDragEnd: () => { this.setDraggedOver(false); },
 			onDragLeave: () => { this.setDraggedOver(false) },
 		}
 
@@ -105,15 +107,16 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 			<div
 				style={nodeRowStyle}
 				className={selectedClass}
-				onKeyDown={e => onKeyDown(id, e)}
 			>
 				{icon}
 				<div
 					className={titleWrapper}
 					{...dragProps}
+					
 					style={{ height: titleWrapperHeight, lineHeight: titleWrapperHeight }}
 					onClick={() => !isSelected && onSelected(id)}
-					onDoubleClick={this.onToggle}>
+					onDoubleClick={this.onToggle}
+				>
 					{title}
 				</div>
 			</div>

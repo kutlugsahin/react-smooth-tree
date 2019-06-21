@@ -4,15 +4,10 @@ export interface TreeItem {
 	id: string;
 }
 
-export interface TreeNodeItemEvents {
-	onSelected: (id: string) => void;
-	onToggleExpanded: (id: string) => void;
-	onKeyDown: (id: string, event: React.KeyboardEvent) => void;
-}
-
-export interface TreeNodeItem extends TreeItem, TreeNodeItemEvents {
+export interface TreeNodeItem extends TreeItem {
 	level: number;
 	item: TreeItem;
+	parent?: TreeNodeItem;
 }
 
 export enum NodeState {
@@ -27,6 +22,8 @@ export interface TreeNodeProps extends TreeNodeItem {
 	isSelected: boolean;
 	height: number;
 	onRequestLoad: (id: string) => void;
+	onSelected: (id: string) => void;
+	onToggleExpanded: (id: string) => void;	
 }
 
 export interface TreeKeyProps {
