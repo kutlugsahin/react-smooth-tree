@@ -74,6 +74,14 @@ class App extends React.Component<Props, State> {
               }, 1000);
             });
           }}
+          renderNode={(props) => {
+            return (
+              <div>
+                <span onClick={props.onToggleExpand}>{props.state}</span>
+                <span>{props.item.title}</span>
+              </div>
+            )
+          }}
         />
       </div>
     );

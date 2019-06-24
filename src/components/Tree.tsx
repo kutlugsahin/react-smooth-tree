@@ -218,6 +218,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 								onItemDrag={this.onItemDrag}
 								dragContext={context.dragContext}
 								renderNodeIcon={context.renderNodeIcon}
+								renderNode={context.renderNode}
 							/>
 						)
 					}}
@@ -240,7 +241,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	}
 
 	render() {
-		const { expandedKeys, selectedKey, loadingKeys, nodeHeight, getNodeClassName, getItemDragData, shouldAllowDrop, renderNodeIcon } = this.props;
+		const { expandedKeys, selectedKey, loadingKeys, nodeHeight, getNodeClassName, getItemDragData, shouldAllowDrop, renderNodeIcon, renderNode } = this.props;
 		return (
 			<DragContainer>
 				{(isDragging: boolean) => {
@@ -260,6 +261,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 								shouldAllowDrop,
 								dragContext: this.state.dragContext,
 								renderNodeIcon,
+								renderNode
 							}}>
 								<List
 									ref={this.listRef}

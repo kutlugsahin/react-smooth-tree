@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, RefObject } from "react";
 
 /*
 An empty array children means the node is leaf
@@ -30,6 +30,12 @@ export interface TreeItemNodeState {
 	state: NodeState;
 	isSelected: boolean;
 }
+export interface NodeRendererProps extends TreeItemNodeState {
+	onToggleExpand: () => void;
+	onSelected: () => void;
+	nodeIcon?: ReactNode;
+	draggableProps?: any;
+}
 
 export interface DragContext {
 	item: TreeItem;
@@ -49,6 +55,7 @@ export interface TreeNodeProps extends TreeNodeItem {
 	onItemDrag: (item: TreeItem) => void;
 	dragContext?: DragContext;
 	renderNodeIcon?: (state: NodeState, toggleExpand: () => void) => ReactNode;
+	renderNode?: (props: NodeRendererProps) => React.ReactNode;
 }
 
 export interface TreeKeyProps {
@@ -64,6 +71,7 @@ export interface TreeNodeContextProps extends TreeKeyProps{
 	shouldAllowDrop?: (draggedItem: TreeItem, targetItem: TreeItem, data?: string) => boolean;
 	dragContext?: DragContext;
 	renderNodeIcon?: (state: NodeState, toggleExpand: () => void) => ReactNode;
+	renderNode?: (props: NodeRendererProps) => React.ReactNode;
 }
 
 export interface TreeKeyChangedProps {
@@ -75,7 +83,7 @@ export interface TreeKeyChangedProps {
 export interface TreeProps extends TreeKeyProps, TreeKeyChangedProps {
 	items: TreeItem[];
 	onItemsChanged: (items: TreeItem[]) => void;
-	renderNode?: (node: TreeItem) => React.ReactNode;
+	renderNode?: (props: NodeRendererProps) => React.ReactNode;
 	nodeHeight?: number;
 	load?: (id: string) => Promise<TreeItem[]>;
 	getNodeClassName?: (props: TreeItemNodeState) => string;

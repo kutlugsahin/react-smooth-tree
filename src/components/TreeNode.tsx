@@ -53,44 +53,8 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 		}
 	}
 
-	render() {
-		const { level, id, onSelected, title, isSelected, height, getNodeClassName, draggable, getItemDragData, shouldAllowDrop, item, dragContext, onItemDrag, nodeState, renderNodeIcon } = this.props;
-		const { isDraggedOver, isDragging } = this.state;
-
-		const nodeRowStyle = {
-			paddingLeft: `${level * 20}px`,
-			height: `${height}px`,
-		};
-
-		const selectedClass = classnames({
-			[styles.node]: true,
-			[styles.expanded]: nodeState === NodeState.Expanded,
-			[styles.loading]: nodeState === NodeState.Loading
-		});
-
-		const titleWrapperHeight = `${height - 4}px`;
-
-		let titleWrapper = classnames({
-			[styles.titleWrapper]: true,
-			[styles.draggedOver]: isDraggedOver,
-			[styles.selected]: isSelected,
-		});
-
-		if (getNodeClassName) {
-			const externalClasses = getNodeClassName({
-				isDraggedOver,
-				isDragging,
-				isSelected,
-				item,
-				state: nodeState,
-			});
-
-			titleWrapper = classnames({
-				[titleWrapper]: true,
-				[externalClasses]: true,
-			});
-		}
-
+	renderNodeIcon() {
+		const { renderNodeIcon, nodeState } = this.props;
 		let icon = null;
 
 		if (renderNodeIcon) {
@@ -122,45 +86,109 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 			icon = <span {...iconProps} />;
 		}
 
-		const dragProps = {
-			draggable,
-			onDragOver: (e: any) => {
-				if (!shouldAllowDrop || (dragContext && shouldAllowDrop(dragContext.item, item, dragContext.data))) {
-					e.preventDefault();
-					this.setState({
-						isDraggedOver: true,
-					});
-				}
-			},
-			onDrop: () => this.setDraggedOver(false),
-			onDragEnd: () => this.setDraggedOver(false),
-			onDragLeave: () => this.setDraggedOver(false),
-			onDrag: (e: React.DragEvent) => {
-				if (getItemDragData) {
-					e.dataTransfer.setData('text', getItemDragData(item));
-				}
-				onItemDrag(item)
-			},
+		return icon;
+	}
+
+	getDraggableProps() {
+		const { item, shouldAllowDrop, dragContext, getItemDragData, onItemDrag } = this.props;
+		if (item.draggable) {
+			return {
+				draggable: true,
+				onDragOver: (e: any) => {
+					if (!shouldAllowDrop || (dragContext && shouldAllowDrop(dragContext.item, item, dragContext.data))) {
+						e.preventDefault();
+						this.setState({
+							isDraggedOver: true,
+						});
+					}
+				},
+				onDrop: () => this.setDraggedOver(false),
+				onDragEnd: () => this.setDraggedOver(false),
+				onDragLeave: () => this.setDraggedOver(false),
+				onDrag: (e: React.DragEvent) => {
+					if (getItemDragData) {
+						e.dataTransfer.setData('text', getItemDragData(item));
+					}
+					onItemDrag(item)
+				},
+			};
+		}
+
+		return {};
+	}
+
+	render() {
+		const { level, id, onSelected, title, isSelected, height, getNodeClassName, item, nodeState, renderNode } = this.props;
+		const { isDraggedOver, isDragging } = this.state;
+
+		const icon = this.renderNodeIcon();
+		const draggableProps = this.getDraggableProps();
+
+		const nodeRowStyle = {
+			paddingLeft: `${level * 20}px`,
+			height: `${height}px`,
+		};
+		let renderedNodeContent = null;
+
+		if (renderNode) {
+			renderedNodeContent = renderNode({
+				draggableProps,
+				isDragging,
+				isDraggedOver,
+				isSelected,
+				item,
+				onSelected: () => onSelected(id),
+				state: nodeState,
+				nodeIcon: icon,
+				onToggleExpand: this.onToggle,
+			})
+		} else {
+
+			const titleWrapperHeight = `${height - 4}px`;
+
+			let titleWrapper = classnames({
+				[styles.titleWrapper]: true,
+				[styles.draggedOver]: isDraggedOver,
+				[styles.selected]: isSelected,
+			});
+
+			if (getNodeClassName) {
+				const externalClasses = getNodeClassName({
+					isDraggedOver,
+					isDragging,
+					isSelected,
+					item,
+					state: nodeState,
+				});
+
+				titleWrapper = classnames({
+					[titleWrapper]: true,
+					[externalClasses]: true,
+				});
+			}
+
+			renderedNodeContent = (
+				<div
+					style={nodeRowStyle}
+				>
+					{icon}
+					<div
+						{...draggableProps}
+						className={titleWrapper}
+						style={{ height: titleWrapperHeight, lineHeight: titleWrapperHeight }}
+						onClick={() => !isSelected && onSelected(id)}
+						onDoubleClick={this.onToggle}
+					>
+						{title}
+					</div>
+				</div>
+			);
 		}
 
 		return (
-			<div
-				style={nodeRowStyle}
-				className={selectedClass}
-			>
-				{icon}
-				<div
-					className={titleWrapper}
-					{...dragProps}
-
-					style={{ height: titleWrapperHeight, lineHeight: titleWrapperHeight }}
-					onClick={() => !isSelected && onSelected(id)}
-					onDoubleClick={this.onToggle}
-				>
-					{title}
-				</div>
+			<div style={nodeRowStyle}>
+				{renderedNodeContent}
 			</div>
 		);
-
 	}
 }
