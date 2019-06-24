@@ -1,28 +1,27 @@
-import { TreeItem, TreeNodeItem, TreeProps, TreeNodeItemEvents } from "./interface";
+import { TreeItem, TreeNodeItem, TreeProps } from "./interface";
 
 export interface TreeBuilder {
 	flatNodes: TreeNodeItem[];
 	indexOf: (id: string) => number;
 	getNodeById: (id: string) => TreeNodeItem | undefined;
+	getNextNode: (id: string) => TreeNodeItem | undefined;
+	getPreviousNode: (id: string) => TreeNodeItem | undefined;
+	getParentNode: (id: string) => TreeNodeItem | undefined;
 }
 
 export interface TreeBuilderFunction {
 	(
 		items: TreeItem[],
-		events: TreeNodeItemEvents,
-		props: TreeProps,
+		expandedKeys: Set<string>,
 	): TreeBuilder;
 }
 
-export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], { onToggleExpanded, onKeyDown, onSelected }: TreeNodeItemEvents, { expandedKeys }: TreeProps): TreeBuilder => {
+export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], expandedKeys: Set<string>): TreeBuilder => {
 
 	const nodes: TreeNodeItem[] = items.map(item => ({
 		item,
 		...item,
 		level: 0,
-		onToggleExpanded,
-		onSelected,
-		onKeyDown,
 	} as TreeNodeItem));
 
 	const stack: TreeNodeItem[] = [...nodes];
@@ -42,11 +41,8 @@ export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], { onToggleEx
 					const childNodeItem: TreeNodeItem = {
 						item: child,
 						...child,
-						onToggleExpanded,
-						onKeyDown,
-						onSelected,
 						level: current.level + 1,
-
+						parent: current,
 					}
 					stack.unshift(childNodeItem);
 				}
@@ -63,6 +59,18 @@ export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], { onToggleEx
 		indexOf,
 		getNodeById(id: string) {
 			return nodeMap.get(id);
+		},
+		getNextNode(id: string) {
+			const index = indexOf(id);
+			return index > -1 ? flatNodes[Math.min(index + 1, flatNodes.length - 1)] : undefined;
+		},
+		getParentNode(id: string) {
+			const node = this.getNodeById(id);
+			return node ? node.parent : undefined;
+		},
+		getPreviousNode(id: string) {
+			const index = indexOf(id);
+			return index > -1 ? flatNodes[Math.max(index - 1, 0)] : undefined;
 		}
 	}
 }

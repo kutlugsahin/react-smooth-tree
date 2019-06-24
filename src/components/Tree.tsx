@@ -3,6 +3,9 @@ import { TreeProps, TreeItem, TreeNodeItem, NodeState, TreeNodeContextProps } fr
 import { treeBuilder, TreeBuilder } from './treeBuilder';
 import { TreeNode } from './TreeNode';
 import { FixedSizeList as List, ListChildComponentProps, FixedSizeList } from 'react-window';
+import styles from './tree.module.scss';
+import classnames from "classnames";
+import DragContainer from './DragContainer';
 
 const TreeNodeContext = React.createContext<TreeNodeContextProps>({
 	expandedKeys: new Set(),
@@ -21,7 +24,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	constructor(props: TreeProps) {
 		super(props);
 		this.onNodeToggleExpand = this.onNodeToggleExpand.bind(this);
-		this.onNodeKeyDown = this.onNodeKeyDown.bind(this);
+		this.onKeyDown = this.onKeyDown.bind(this);
 		this.setTreeStructure = this.setTreeStructure.bind(this);
 		this.setLoading = this.setLoading.bind(this);
 		this.setExpanded = this.setExpanded.bind(this);
@@ -31,12 +34,12 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 		this.onRequestLoad = this.onRequestLoad.bind(this);
 		this.getTreeNodeState = this.getTreeNodeState.bind(this);
 
+		this.selectNext = this.selectNext.bind(this);
+		this.selectPrevious = this.selectPrevious.bind(this);
+		this.selectParent = this.selectParent.bind(this);
+
 		this.state = {
-			treeStructure: treeBuilder(props.items, {
-				onToggleExpanded: this.onNodeToggleExpand,
-				onKeyDown: this.onNodeKeyDown,
-				onSelected: props.onSelected,
-			}, props),
+			treeStructure: treeBuilder(props.items, props.expandedKeys),
 		}
 	}
 
@@ -47,7 +50,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	}
 
 	public scrollTo(id: string) {
-		if (this.state.treeStructure && this.listRef.current) {
+		if (this.listRef.current) {
 			const index = this.state.treeStructure.indexOf(id);
 
 			if (index > -1) {
@@ -58,11 +61,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 
 	private setTreeStructure() {
 		this.setState({
-			treeStructure: treeBuilder(this.props.items, {
-				onToggleExpanded: this.onNodeToggleExpand,
-				onKeyDown: this.onNodeKeyDown,
-				onSelected: this.props.onSelected,
-			}, this.props)
+			treeStructure: treeBuilder(this.props.items, this.props.expandedKeys)
 		});
 	}
 
@@ -79,11 +78,9 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	}
 
 	private onRequestLoad(id: string): void {
-		if (this.state.treeStructure) {
-			const node = this.state.treeStructure.getNodeById(id);
-			if (node) {
-				this.loadItems(node);
-			}
+		const node = this.state.treeStructure.getNodeById(id);
+		if (node) {
+			this.loadItems(node);
 		}
 	}
 
@@ -96,6 +93,8 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 				node.children = result;
 				node.item.children = result;
 				this.props.onItemsChanged([...this.props.items]);
+			}).catch(() => {
+				this.setLoading(node.id, false);
 			});
 		}
 	}
@@ -109,34 +108,84 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 		}
 
 		// call load if necessary
-		if (this.state.treeStructure) {
-			const node = this.state.treeStructure.getNodeById(id);
-			if (node) {
-				if (!isExpanded && !node.children && this.props.load) {
-					this.loadItems(node);
-				}
+		const node = this.state.treeStructure.getNodeById(id);
+		if (node) {
+			if (!isExpanded && !node.children && this.props.load) {
+				this.loadItems(node);
 			}
 		}
 	}
 
-	private onNodeKeyDown(id: string, event: React.KeyboardEvent) {
-		switch (event.keyCode) {
-			case 8: {
-				if (event.shiftKey) {
-					// go up
-				} else {
-					// go down
+	private selectNext() {
+		const nextNode = this.state.treeStructure.getNextNode(this.props.selectedKey);
+		if (nextNode) {
+			this.props.onSelected(nextNode.id);
+			this.scrollTo(nextNode.id);
+		}
+	}
+
+	private selectPrevious() {
+		const prevNode = this.state.treeStructure.getPreviousNode(this.props.selectedKey);
+		if (prevNode) {
+			this.props.onSelected(prevNode.id);
+			this.scrollTo(prevNode.id);
+		}
+	}
+
+	private selectParent() {
+		const parentNode = this.state.treeStructure.getParentNode(this.props.selectedKey);
+		if (parentNode) {
+			this.props.onSelected(parentNode.id);
+			this.scrollTo(parentNode.id);
+		}
+	}
+
+	private onKeyDown(event: React.KeyboardEvent) {
+		if (this.props.selectedKey) {
+			switch (event.keyCode) {
+				case 8:
+					this.selectParent();
+					break;
+				case 9: {
+					event.preventDefault();
+					if (event.shiftKey) {
+						this.selectPrevious();
+					} else {
+						this.selectNext();
+					}
 				}
+					break;
+				case 38:
+					event.preventDefault();
+					this.selectPrevious();
+					break;
+				case 40:
+					event.preventDefault();
+					this.selectNext();
+					break;
+				case 37:
+					if (this.props.expandedKeys.has(this.props.selectedKey)) {
+						event.preventDefault();
+						this.setExpanded(this.props.selectedKey, false);
+					}
+					break;
+				case 13:
+				case 39:
+					if (!this.props.expandedKeys.has(this.props.selectedKey)) {
+						event.preventDefault();
+						this.setLoading(this.props.selectedKey);
+						this.setExpanded(this.props.selectedKey, true);
+					}
+					break;
+				default:
+					break;
 			}
-				break;
-			default:
-				break;
 		}
 	}
 
 	private getTreeNodeState(id: string, children?: TreeItem[]): NodeState {
 		const { loadingKeys, expandedKeys } = this.props;
-		if (loadingKeys.has(id))
+		if (loadingKeys.has(id) && !children)
 			return NodeState.Loading;
 
 		if (children && children.length === 0)
@@ -149,29 +198,25 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	}
 
 	private renderNode({ index, style }: ListChildComponentProps) {
-		if (this.state.treeStructure) {
-			const node = this.state.treeStructure.flatNodes[index];
-			return (
-				<div style={style}>
-					<TreeNodeContext.Consumer>
-						{(context: TreeNodeContextProps) => {
-							return (
-								<TreeNode {...node}
-									onToggleExpanded={this.onNodeToggleExpand}
-									onSelected={this.props.onSelected}
-									onKeyDown={this.onNodeKeyDown}
-									nodeState={this.getTreeNodeState(node.id, node.children)}
-									isSelected={context.selectedKey === node.id}
-									height={context.height}
-									onRequestLoad={this.onRequestLoad}
-								/>
-							)
-						}}
-					</TreeNodeContext.Consumer>
-				</div>
-			);
-		}
-		return null;
+		const node = this.state.treeStructure.flatNodes[index];
+		return (
+			<div style={style}>
+				<TreeNodeContext.Consumer>
+					{(context: TreeNodeContextProps) => {
+						return (
+							<TreeNode {...node}
+								onToggleExpanded={this.onNodeToggleExpand}
+								onSelected={this.props.onSelected}
+								nodeState={this.getTreeNodeState(node.id, node.children)}
+								isSelected={context.selectedKey === node.id}
+								height={context.height}
+								onRequestLoad={this.onRequestLoad}
+							/>
+						)
+					}}
+				</TreeNodeContext.Consumer>
+			</div>
+		);
 	}
 
 	private getItemKey(index: number) {
@@ -179,29 +224,37 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	}
 
 	render() {
-		if (this.state.treeStructure) {
-			const { expandedKeys, selectedKey, loadingKeys, nodeHeight } = this.props;
-			return (
-				<TreeNodeContext.Provider value={{
-					expandedKeys,
-					selectedKey,
-					loadingKeys,
-					height: nodeHeight || 30
-				}}>
-					<List
-						ref={this.listRef}
-						height={500}
-						itemCount={this.state.treeStructure.flatNodes.length}
-						itemSize={nodeHeight || 30}
-						width={'auto'}
-						itemKey={this.getItemKey}
-						children={this.renderNode}
-					/>
-				</TreeNodeContext.Provider>
-			)
-		}
-
-		return null;
+		const { expandedKeys, selectedKey, loadingKeys, nodeHeight } = this.props;
+		return (
+			<DragContainer>
+				{(isDragging: boolean) => {
+					const classes = classnames({
+						[styles.root]: true,
+						[styles.isDragging]: isDragging,
+					});
+					return (
+						<div tabIndex={0} className={classes} onKeyDown={this.onKeyDown}>
+							<TreeNodeContext.Provider value={{
+								expandedKeys,
+								selectedKey,
+								loadingKeys,
+								height: nodeHeight || 30
+							}}>
+								<List
+									ref={this.listRef}
+									height={500}
+									itemCount={this.state.treeStructure.flatNodes.length}
+									itemSize={nodeHeight || 30}
+									width={'auto'}
+									itemKey={this.getItemKey}
+									children={this.renderNode}
+								/>
+							</TreeNodeContext.Provider>
+						</div>
+					)
+				}}
+			</DragContainer>
+		);
 	}
 }
 

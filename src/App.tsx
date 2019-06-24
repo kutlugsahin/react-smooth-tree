@@ -41,7 +41,7 @@ class App extends React.Component<Props, State> {
       items: data,
       selectedKey: '100',
       expandedKeys: new Set(['0', '0-0', '0-0-0', '0-0-0-0']),
-      loadingKeys: new Set(['0','0-0', '0-0-0', '0-0-0-0']),
+      loadingKeys: new Set(['0-0', '0-0-0', '0-0-0-0']),
     };
   }
   render() {
@@ -65,6 +65,7 @@ class App extends React.Component<Props, State> {
                 res(Array(10).fill(true).map((_, i: number) => ({
                   id: `${id}-${i}`,
                   title: `item ${id}-${i}`,
+                  children: []
                 } as TreeItem)))
               }, 1000);
             });
