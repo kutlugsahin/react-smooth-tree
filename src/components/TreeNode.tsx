@@ -53,7 +53,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 		}
 	}
 
-	renderNodeIcon() {
+	private renderNodeIcon(): React.ReactNode {
 		const { renderNodeIcon, nodeState } = this.props;
 		let icon = null;
 
@@ -76,7 +76,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 					iconProps.className = styles.icon;
 					break;
 				case NodeState.Loading:
-					iconProps.className = styles.icon;
+					iconProps.className = `${styles.icon} ${styles.iconLoading}`;
 					iconProps.children = '◠';
 					break;
 				default:
@@ -89,7 +89,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 		return icon;
 	}
 
-	getDraggableProps() {
+	private getDraggableProps(): any {
 		const { item, shouldAllowDrop, dragContext, getItemDragData, onItemDrag } = this.props;
 		if (item.draggable) {
 			return {
@@ -117,7 +117,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 		return {};
 	}
 
-	render() {
+	public render(): React.ReactNode {
 		const { level, id, onSelected, title, isSelected, height, getNodeClassName, item, nodeState, renderNode } = this.props;
 		const { isDraggedOver, isDragging } = this.state;
 
@@ -168,9 +168,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 			}
 
 			renderedNodeContent = (
-				<div
-					style={nodeRowStyle}
-				>
+				<div className={styles.node}>
 					{icon}
 					<div
 						{...draggableProps}
