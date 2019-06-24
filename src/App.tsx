@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, createRef } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import Tree from './components/Tree';
@@ -34,11 +34,12 @@ for (let i = 0; i < 1000; i++) {
 }
 
 class App extends React.Component<Props, State> {
+  private tree = createRef<Tree>();
   constructor(props: any) {
     super(props);
     this.state = {
       items: data,
-      selectedKey: '',
+      selectedKey: '100',
       expandedKeys: new Set(['0', '0-0', '0-0-0', '0-0-0-0']),
       loadingKeys: new Set(['0','0-0', '0-0-0', '0-0-0-0']),
     };
@@ -46,7 +47,9 @@ class App extends React.Component<Props, State> {
   render() {
     return (
       <div className="App">
+        <button onClick={() => this.tree.current!.scrollTo('100')}>goto 100</button>
         <Tree
+          ref={this.tree}
           nodeHeight={28}
           items={this.state.items}
           onSelected={key => this.setState({ selectedKey: key })}
