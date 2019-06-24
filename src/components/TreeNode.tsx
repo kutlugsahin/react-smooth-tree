@@ -6,6 +6,7 @@ import styles from './tree.module.scss';
 
 interface TreeNodeState {
 	isDraggedOver: boolean;
+	isDragging: boolean;
 }
 
 export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
@@ -16,6 +17,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 		this.onToggle = this.onToggle.bind(this);
 		this.state = {
 			isDraggedOver: false,
+			isDragging: false,
 		};
 	}
 
@@ -52,8 +54,8 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 	}
 
 	render() {
-		const { level, id, onSelected, title, isSelected, height } = this.props;
-		const { isDraggedOver } = this.state;
+		const { level, id, onSelected, title, isSelected, height, getNodeClassName, draggable, getItemDragData, shouldAllowDrop, item, dragContext, onItemDrag, nodeState, renderNodeIcon } = this.props;
+		const { isDraggedOver, isDragging } = this.state;
 
 		const nodeRowStyle = {
 			paddingLeft: `${level * 20}px`,
@@ -62,45 +64,83 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 
 		const selectedClass = classnames({
 			[styles.node]: true,
-			[styles.expanded]: this.props.nodeState === NodeState.Expanded,
-			[styles.loading]: this.props.nodeState === NodeState.Loading
+			[styles.expanded]: nodeState === NodeState.Expanded,
+			[styles.loading]: nodeState === NodeState.Loading
 		});
 
 		const titleWrapperHeight = `${height - 4}px`;
-		const titleWrapper = classnames({
+
+		let titleWrapper = classnames({
 			[styles.titleWrapper]: true,
 			[styles.draggedOver]: isDraggedOver,
 			[styles.selected]: isSelected,
 		});
 
+		if (getNodeClassName) {
+			const externalClasses = getNodeClassName({
+				isDraggedOver,
+				isDragging,
+				isSelected,
+				item,
+				state: nodeState,
+			});
+
+			titleWrapper = classnames({
+				[titleWrapper]: true,
+				[externalClasses]: true,
+			});
+		}
+
 		let icon = null;
 
-		switch (this.props.nodeState) {
-			case NodeState.Collapsed:
-				icon = <span onClick={this.onToggle} className={styles.icon}>▸</span>;
-				break;
-			case NodeState.Expanded:
-				icon = <span onClick={this.onToggle} className={styles.icon}>▸</span>;
-				break;
-			case NodeState.Leaf:
-				icon = <span className={styles.icon}></span>;
-				break;
-			case NodeState.Loading:
-				icon = <span onClick={this.onToggle} className={styles.icon}>◠</span>;
-				break;
-			default:
-				break;
+		if (renderNodeIcon) {
+			icon = renderNodeIcon(nodeState, this.onToggle);
+		} else {
+			let iconProps: { className?: string, onClick?: () => void, children?: React.ReactNode } = {};
+			switch (nodeState) {
+				case NodeState.Collapsed:
+					iconProps.className = styles.icon;
+					iconProps.onClick = this.onToggle;
+					iconProps.children = '▸';
+					break;
+				case NodeState.Expanded:
+					iconProps.className = `${styles.icon} ${styles.iconExpanded}`;
+					iconProps.onClick = this.onToggle;
+					iconProps.children = '▸';
+					break;
+				case NodeState.Leaf:
+					iconProps.className = styles.icon;
+					break;
+				case NodeState.Loading:
+					iconProps.className = styles.icon;
+					iconProps.children = '◠';
+					break;
+				default:
+					break;
+			}
+
+			icon = <span {...iconProps} />;
 		}
 
 		const dragProps = {
-			draggable: true,
+			draggable,
 			onDragOver: (e: any) => {
-				e.preventDefault();
-				this.setDraggedOver(true);
+				if (!shouldAllowDrop || (dragContext && shouldAllowDrop(dragContext.item, item, dragContext.data))) {
+					e.preventDefault();
+					this.setState({
+						isDraggedOver: true,
+					});
+				}
 			},
 			onDrop: () => this.setDraggedOver(false),
-			onDragEnd: () => { this.setDraggedOver(false); },
-			onDragLeave: () => { this.setDraggedOver(false) },
+			onDragEnd: () => this.setDraggedOver(false),
+			onDragLeave: () => this.setDraggedOver(false),
+			onDrag: (e: React.DragEvent) => {
+				if (getItemDragData) {
+					e.dataTransfer.setData('text', getItemDragData(item));
+				}
+				onItemDrag(item)
+			},
 		}
 
 		return (
@@ -112,7 +152,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 				<div
 					className={titleWrapper}
 					{...dragProps}
-					
+
 					style={{ height: titleWrapperHeight, lineHeight: titleWrapperHeight }}
 					onClick={() => !isSelected && onSelected(id)}
 					onDoubleClick={this.onToggle}

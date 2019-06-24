@@ -1,4 +1,4 @@
-import { TreeItem, TreeNodeItem, TreeProps } from "./interface";
+import { TreeItem, TreeNodeItem, KeySet, Dictionary } from "./interface";
 
 export interface TreeBuilder {
 	flatNodes: TreeNodeItem[];
@@ -12,29 +12,28 @@ export interface TreeBuilder {
 export interface TreeBuilderFunction {
 	(
 		items: TreeItem[],
-		expandedKeys: Set<string>,
+		expandedKeys: KeySet,
 	): TreeBuilder;
 }
 
-export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], expandedKeys: Set<string>): TreeBuilder => {
+export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], expandedKeys: KeySet): TreeBuilder => {
 
 	const nodes: TreeNodeItem[] = items.map(item => ({
-		item,
 		...item,
+		item,
 		level: 0,
 	} as TreeNodeItem));
 
 	const stack: TreeNodeItem[] = [...nodes];
 
 	const flatNodes: TreeNodeItem[] = [];
-	const nodeMap = new Map<string, TreeNodeItem>();
-	// const treeItemMap = new Map<string, TreeItem>();
+	const nodeMap: Dictionary<TreeNodeItem> = {};
 
 	while (stack.length) {
 		const current = stack.shift()!;
-		nodeMap.set(current.id, current);
+		nodeMap[current.id] = current;
 		flatNodes.push(current);
-		if (expandedKeys.has(current.id)) {
+		if (expandedKeys[current.id]) {
 			if (current.children) {
 				for (let i = current.children.length - 1; i >= 0; i--) {
 					const child = current.children[i];
@@ -58,7 +57,7 @@ export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], expandedKeys
 		flatNodes,
 		indexOf,
 		getNodeById(id: string) {
-			return nodeMap.get(id);
+			return nodeMap[id];
 		},
 		getNextNode(id: string) {
 			const index = indexOf(id);

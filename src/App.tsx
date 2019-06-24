@@ -2,7 +2,7 @@ import React, { Component, createRef } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import Tree from './components/Tree';
-import { TreeItem } from './components/interface';
+import { TreeItem, KeySet } from './components/interface';
 
 interface Props {
   
@@ -12,8 +12,8 @@ interface Props {
 interface State {
   items: TreeItem[];
   selectedKey: string;
-  expandedKeys: Set<string>;
-  loadingKeys: Set<string>;
+  expandedKeys: KeySet;
+  loadingKeys: KeySet;
 }
 
 const data: TreeItem[] = [];
@@ -40,8 +40,12 @@ class App extends React.Component<Props, State> {
     this.state = {
       items: data,
       selectedKey: '100',
-      expandedKeys: new Set(['0', '0-0', '0-0-0', '0-0-0-0']),
-      loadingKeys: new Set(['0-0', '0-0-0', '0-0-0-0']),
+      expandedKeys: {
+        '0': true, '0-0': true, '0-0-0': true, '0-0-0-0': true
+      },
+      loadingKeys: {
+        '0-0': true, '0-0-0':true, '0-0-0-0': true
+      },
     };
   }
   render() {

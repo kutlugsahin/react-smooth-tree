@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { TreeProps, TreeItem, TreeNodeItem, NodeState, TreeNodeContextProps } from './interface';
+import { TreeProps, TreeItem, TreeNodeItem, NodeState, TreeNodeContextProps, DragContext } from './interface';
 import { treeBuilder, TreeBuilder } from './treeBuilder';
 import { TreeNode } from './TreeNode';
 import { FixedSizeList as List, ListChildComponentProps, FixedSizeList } from 'react-window';
@@ -8,14 +8,15 @@ import classnames from "classnames";
 import DragContainer from './DragContainer';
 
 const TreeNodeContext = React.createContext<TreeNodeContextProps>({
-	expandedKeys: new Set(),
+	expandedKeys: {},
 	selectedKey: '',
-	loadingKeys: new Set(),
+	loadingKeys: {},
 	height: 30,
 });
 
 export interface TreeClassState {
 	treeStructure: TreeBuilder;
+	dragContext?: DragContext;
 }
 
 class Tree extends React.Component<TreeProps, TreeClassState> {
@@ -66,14 +67,14 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	}
 
 	private setLoading(id: string, isLoading = true) {
-		const loadingKeySet = new Set(this.props.loadingKeys);
-		isLoading ? loadingKeySet.add(id) : loadingKeySet.delete(id);
+		const loadingKeySet = { ...this.props.loadingKeys };
+		isLoading ? (loadingKeySet[id] = true) : (delete loadingKeySet[id]);
 		this.props.onLoadingKeysChanged(loadingKeySet);
 	}
 
 	private setExpanded(id: string, expanded = true) {
-		const expandedKeySet = new Set(this.props.expandedKeys);
-		expanded ? expandedKeySet.add(id) : expandedKeySet.delete(id);
+		const expandedKeySet = { ...this.props.expandedKeys };
+		expanded ? (expandedKeySet[id] = true) : (delete expandedKeySet[id]);
 		this.props.onExpandedKeysChanged(expandedKeySet);
 	}
 
@@ -100,7 +101,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 	}
 
 	private onNodeToggleExpand(id: string) {
-		const isExpanded = this.props.expandedKeys.has(id);
+		const isExpanded = this.props.expandedKeys[id];
 		if (isExpanded) {
 			this.setExpanded(id, false);
 		} else {
@@ -164,14 +165,14 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 					this.selectNext();
 					break;
 				case 37:
-					if (this.props.expandedKeys.has(this.props.selectedKey)) {
+					if (this.props.expandedKeys[this.props.selectedKey]) {
 						event.preventDefault();
 						this.setExpanded(this.props.selectedKey, false);
 					}
 					break;
 				case 13:
 				case 39:
-					if (!this.props.expandedKeys.has(this.props.selectedKey)) {
+					if (!this.props.expandedKeys[this.props.selectedKey]) {
 						event.preventDefault();
 						this.setLoading(this.props.selectedKey);
 						this.setExpanded(this.props.selectedKey, true);
@@ -185,13 +186,13 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 
 	private getTreeNodeState(id: string, children?: TreeItem[]): NodeState {
 		const { loadingKeys, expandedKeys } = this.props;
-		if (loadingKeys.has(id) && !children)
+		if (loadingKeys[id] && !children)
 			return NodeState.Loading;
 
 		if (children && children.length === 0)
 			return NodeState.Leaf;
 
-		if (expandedKeys.has(id))
+		if (expandedKeys[id])
 			return NodeState.Expanded;
 
 		return NodeState.Collapsed;
@@ -211,6 +212,12 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 								isSelected={context.selectedKey === node.id}
 								height={context.height}
 								onRequestLoad={this.onRequestLoad}
+								getNodeClassName={context.getNodeClassName}
+								getItemDragData={context.getItemDragData}
+								shouldAllowDrop={context.shouldAllowDrop}
+								onItemDrag={this.onItemDrag}
+								dragContext={context.dragContext}
+								renderNodeIcon={context.renderNodeIcon}
 							/>
 						)
 					}}
@@ -223,8 +230,17 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 		return this.state.treeStructure.flatNodes[index].id;
 	}
 
+	private onItemDrag(item: TreeItem) {
+		this.setState({
+			dragContext: {
+				item,
+				data: this.props.getItemDragData ? this.props.getItemDragData(item) : undefined,
+			}
+		})
+	}
+
 	render() {
-		const { expandedKeys, selectedKey, loadingKeys, nodeHeight } = this.props;
+		const { expandedKeys, selectedKey, loadingKeys, nodeHeight, getNodeClassName, getItemDragData, shouldAllowDrop, renderNodeIcon } = this.props;
 		return (
 			<DragContainer>
 				{(isDragging: boolean) => {
@@ -238,7 +254,12 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 								expandedKeys,
 								selectedKey,
 								loadingKeys,
-								height: nodeHeight || 30
+								height: nodeHeight || 30,
+								getNodeClassName,
+								getItemDragData,
+								shouldAllowDrop,
+								dragContext: this.state.dragContext,
+								renderNodeIcon,
 							}}>
 								<List
 									ref={this.listRef}
