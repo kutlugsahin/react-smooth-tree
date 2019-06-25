@@ -1,8 +1,7 @@
 import classnames from 'classnames';
 import * as React from 'react';
-import { NodeState, TreeNodeProps } from "./interface";
+import { NodeState, TreeNodeProps } from './interface';
 import styles from './tree.module.scss';
-
 
 interface TreeNodeState {
 	isDraggedOver: boolean;
@@ -21,25 +20,15 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 		};
 	}
 
-	private setDraggedOver(isDraggedOver: boolean): void {
-		this.setState({ isDraggedOver });
-	}
-
-	private onToggle(): void {
-		if (this.props.nodeState & (NodeState.Collapsed | NodeState.Expanded)) {
-			this.props.onToggleExpanded(this.props.id);
-		}
-	}
-
-	public componentDidMount() {
-		if (this.props.nodeState === NodeState.Loading) {
+	public componentDidMount(): void {
+		if (this.props.nodeState === NodeState.LOADING) {
 			this.props.onRequestLoad(this.props.id);
 		}
 	}
 
-	public componentDidUpdate(prevProps: TreeNodeProps, prevState: TreeNodeState) {
+	public componentDidUpdate(prevProps: TreeNodeProps, prevState: TreeNodeState): void {
 		if (!prevState.isDraggedOver && this.state.isDraggedOver) {
-			if (this.props.nodeState === NodeState.Collapsed) {
+			if (this.props.nodeState === NodeState.COLLAPSED) {
 				this.dragOverExpandTimer = setTimeout(() => {
 					this.onToggle();
 				}, 700);
@@ -48,73 +37,9 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 			clearTimeout(this.dragOverExpandTimer);
 		}
 
-		if (prevProps.nodeState !== NodeState.Loading && this.props.nodeState === NodeState.Loading) {
+		if (prevProps.nodeState !== NodeState.LOADING && this.props.nodeState === NodeState.LOADING) {
 			this.props.onRequestLoad(this.props.id);
 		}
-	}
-
-	private renderNodeIcon(): React.ReactNode {
-		const { renderNodeIcon, nodeState } = this.props;
-		let icon = null;
-
-		if (renderNodeIcon) {
-			icon = renderNodeIcon(nodeState, this.onToggle);
-		} else {
-			let iconProps: { className?: string, onClick?: () => void, children?: React.ReactNode } = {};
-			switch (nodeState) {
-				case NodeState.Collapsed:
-					iconProps.className = styles.icon;
-					iconProps.onClick = this.onToggle;
-					iconProps.children = '▸';
-					break;
-				case NodeState.Expanded:
-					iconProps.className = `${styles.icon} ${styles.iconExpanded}`;
-					iconProps.onClick = this.onToggle;
-					iconProps.children = '▸';
-					break;
-				case NodeState.Leaf:
-					iconProps.className = styles.icon;
-					break;
-				case NodeState.Loading:
-					iconProps.className = `${styles.icon} ${styles.iconLoading}`;
-					iconProps.children = '◠';
-					break;
-				default:
-					break;
-			}
-
-			icon = <span {...iconProps} />;
-		}
-
-		return icon;
-	}
-
-	private getDraggableProps(): any {
-		const { item, shouldAllowDrop, dragContext, getItemDragData, onItemDrag } = this.props;
-		if (item.draggable) {
-			return {
-				draggable: true,
-				onDragOver: (e: any) => {
-					if (!shouldAllowDrop || (dragContext && shouldAllowDrop(dragContext.item, item, dragContext.data))) {
-						e.preventDefault();
-						this.setState({
-							isDraggedOver: true,
-						});
-					}
-				},
-				onDrop: () => this.setDraggedOver(false),
-				onDragEnd: () => this.setDraggedOver(false),
-				onDragLeave: () => this.setDraggedOver(false),
-				onDrag: (e: React.DragEvent) => {
-					if (getItemDragData) {
-						e.dataTransfer.setData('text', getItemDragData(item));
-					}
-					onItemDrag(item)
-				},
-			};
-		}
-
-		return {};
 	}
 
 	public render(): React.ReactNode {
@@ -141,7 +66,7 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 				state: nodeState,
 				nodeIcon: icon,
 				onToggleExpand: this.onToggle,
-			})
+			});
 		} else {
 
 			const titleWrapperHeight = `${height - 4}px`;
@@ -188,5 +113,79 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
 				{renderedNodeContent}
 			</div>
 		);
+	}
+
+	private setDraggedOver(isDraggedOver: boolean): void {
+		this.setState({ isDraggedOver });
+	}
+
+	private onToggle(): void {
+		if (this.props.nodeState & (NodeState.COLLAPSED | NodeState.EXPANDED)) {
+			this.props.onToggleExpanded(this.props.id);
+		}
+	}
+
+	private renderNodeIcon(): React.ReactNode {
+		const { renderNodeIcon, nodeState } = this.props;
+		let icon = null;
+
+		if (renderNodeIcon) {
+			icon = renderNodeIcon(nodeState, this.onToggle);
+		} else {
+			const iconProps: { className?: string, onClick?: () => void, children?: React.ReactNode } = {};
+			switch (nodeState) {
+				case NodeState.COLLAPSED:
+					iconProps.className = styles.icon;
+					iconProps.onClick = this.onToggle;
+					iconProps.children = '▸';
+					break;
+				case NodeState.EXPANDED:
+					iconProps.className = `${styles.icon} ${styles.iconExpanded}`;
+					iconProps.onClick = this.onToggle;
+					iconProps.children = '▸';
+					break;
+				case NodeState.LEAF:
+					iconProps.className = styles.icon;
+					break;
+				case NodeState.LOADING:
+					iconProps.className = `${styles.icon} ${styles.iconLoading}`;
+					iconProps.children = '◠';
+					break;
+				default:
+					break;
+			}
+
+			icon = <span {...iconProps} />;
+		}
+
+		return icon;
+	}
+
+	private getDraggableProps(): any {
+		const { item, shouldAllowDrop, dragContext, getItemDragData, onItemDrag } = this.props;
+		if (item.draggable) {
+			return {
+				draggable: true,
+				onDragOver: (e: any) => {
+					if (!shouldAllowDrop || (dragContext && shouldAllowDrop(dragContext.item, item, dragContext.data))) {
+						e.preventDefault();
+						this.setState({
+							isDraggedOver: true,
+						});
+					}
+				},
+				onDrop: () => this.setDraggedOver(false),
+				onDragEnd: () => this.setDraggedOver(false),
+				onDragLeave: () => this.setDraggedOver(false),
+				onDrag: (e: React.DragEvent) => {
+					if (getItemDragData) {
+						e.dataTransfer.setData('text', getItemDragData(item));
+					}
+					onItemDrag(item);
+				},
+			};
+		}
+
+		return {};
 	}
 }
