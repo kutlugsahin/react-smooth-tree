@@ -14,6 +14,23 @@
     white-space: nowrap;
     outline: none;
 
+    &.animateIn {
+        animation-name: animateIn;
+        animation-timing-function: ease;
+        animation-duration: .3s;
+    }
+
+    @keyframes animateIn {
+        from {
+            opacity: .5;
+            transform: translate3d(0, -5px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
     .icon {
         align-self: center;
         transition: transform 0.2s ease;

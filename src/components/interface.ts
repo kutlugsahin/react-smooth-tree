@@ -56,7 +56,7 @@ export interface TreeNodeProps extends TreeNodeItem {
     renderNodeIcon?: (state: NodeState, toggleExpand: () => void) => ReactNode;
     renderNode?: (props: NodeRendererProps) => React.ReactNode;
     title: ReactNode;
-    isDraggable: boolean;
+	isDraggable: boolean;
 }
 
 export interface TreeKeyProps {
@@ -72,7 +72,7 @@ export interface TreeNodeContextProps extends TreeKeyProps {
     shouldAllowDrop?: (draggedItem: TreeItem, targetItem: TreeItem, data?: string) => boolean;
     dragContext?: DragContext;
     renderNodeIcon?: (state: NodeState, toggleExpand: () => void) => ReactNode;
-    renderNode?: (props: NodeRendererProps) => React.ReactNode;
+	renderNode?: (props: NodeRendererProps) => React.ReactNode;
 }
 
 export enum InputType {

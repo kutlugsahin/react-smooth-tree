@@ -13,13 +13,13 @@ const TreeNodeContext = React.createContext<TreeNodeContextProps>({
     expandedKeys: {},
     selectedKey: '',
     loadingKeys: {},
-    height: 30,
+	height: 30,
 });
 
 export interface TreeClassState {
     treeStructure: TreeBuilder;
     dragContext?: DragContext;
-    height?: number;
+	height?: number;
 }
 
 class Tree extends React.Component<TreeProps, TreeClassState> {
@@ -59,7 +59,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
             if (this.outerContainer.current) {
                 this.outerContainer.current.style.overflowX = 'scroll';
             }
-        }
+		}
     }
 
     public componentDidMount(): void {
@@ -115,7 +115,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
                                 renderNodeIcon,
                                 renderNode,
                                 height: nodeHeight || 30,
-                                dragContext: this.state.dragContext,
+								dragContext: this.state.dragContext,
                             }}>
                                 <List
                                     overscanCount={5}
@@ -125,7 +125,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
                                     itemCount={this.state.treeStructure.flatNodes.length}
                                     itemSize={nodeHeight || 30}
                                     width={'auto'}
-                                    // itemKey={this.getItemKey}
+                                    itemKey={this.getItemKey}
                                     children={this.renderNode}
                                 />
                             </TreeNodeContext.Provider>
@@ -169,7 +169,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
         if (this.props.load) {
             this.setLoading(node.id);
 
-            this.props.load(node.id).then((result: TreeItem[]) => {
+			this.props.load(node.id).then((result: TreeItem[]) => {
                 this.setLoading(node.id, false);
                 node.children = result;
                 node.item.children = result;
@@ -310,7 +310,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
             <div style={style}>
                 <TreeNodeContext.Consumer>
                     {(context: TreeNodeContextProps) => {
-                        const node = this.state.treeStructure.flatNodes[index];
+						const node = this.state.treeStructure.flatNodes[index];
                         return (
                             <TreeNode {...node}
                                 onToggleExpanded={this.onNodeToggleExpand}
@@ -326,7 +326,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
                                 dragContext={context.dragContext}
                                 renderNodeIcon={context.renderNodeIcon}
                                 renderNode={context.renderNode}
-                                title={this.renderNodeTitle(node.data)}
+								title={this.renderNodeTitle(node.data)}
                                 isDraggable={false}
                             />
                         );

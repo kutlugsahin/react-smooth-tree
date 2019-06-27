@@ -90,10 +90,14 @@ export class TreeNode extends React.Component<TreeNodeProps, TreeNodeState> {
                     [titleWrapper]: true,
                     [externalClasses]: true,
                 });
-            }
+			}
+			
+			const nodeClasses = classnames({
+				[styles.node]: true,
+			})
 
             renderedNodeContent = (
-                <div className={styles.node}>
+				<div className={nodeClasses}>
                     {icon}
                     <div
                         {...draggableProps}
