@@ -4,6 +4,7 @@ interface DragContainerProps {
     children: (
         isDragging: boolean,
     ) => React.ReactNode;
+    rootRef?: React.RefObject<HTMLDivElement>;
 }
 
 interface DragContainerState {
@@ -11,12 +12,13 @@ interface DragContainerState {
 }
 
 class DragContainer extends React.Component<DragContainerProps, DragContainerState> {
-    private container: React.RefObject<HTMLDivElement> = React.createRef<HTMLDivElement>();
+    private container: React.RefObject<HTMLDivElement> = null!;
     constructor(props: DragContainerProps) {
         super(props);
         this.onDragStart = this.onDragStart.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onDragEnd = this.onDragEnd.bind(this);
+        this.container = props.rootRef || React.createRef<HTMLDivElement>();
         this.state = {
             isDragging: false,
         };

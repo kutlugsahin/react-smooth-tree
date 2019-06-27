@@ -1,10 +1,11 @@
 import classnames from 'classnames';
 import * as React from 'react';
 import { FixedSizeList, FixedSizeList as List, ListChildComponentProps } from 'react-window';
+import { Size, SizeWatcher, watchElementSize } from './watchElementSize';
 import DragContainer from './DragContainer';
-import { DragContext, NodeState, TreeItem, TreeNodeContextProps, TreeNodeItem, TreeProps } from './interface';
-import styles from './tree.module.scss';
-import { treeBuilder, TreeBuilder } from './treeBuilder';
+import { DragContext, InputEvent, InputType, NodeState, TreeBuilder, TreeItem, TreeNodeContextProps, TreeNodeItem, TreeProps } from './interface';
+import styles from './style.module.scss';
+import { treeBuilder } from './treeBuilder';
 import { TreeNode } from './TreeNode';
 
 // tslint:disable-next-line:variable-name
@@ -18,10 +19,14 @@ const TreeNodeContext = React.createContext<TreeNodeContextProps>({
 export interface TreeClassState {
     treeStructure: TreeBuilder;
     dragContext?: DragContext;
+    height?: number;
 }
 
 class Tree extends React.Component<TreeProps, TreeClassState> {
     private listRef: React.RefObject<FixedSizeList> = React.createRef();
+    private root: React.RefObject<HTMLDivElement> = React.createRef();
+    private sizeWatcher: SizeWatcher = null!;
+    private outerContainer: React.RefObject<HTMLDivElement> = React.createRef();
 
     constructor(props: TreeProps) {
         super(props);
@@ -35,7 +40,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
         this.getItemKey = this.getItemKey.bind(this);
         this.onRequestLoad = this.onRequestLoad.bind(this);
         this.getTreeNodeState = this.getTreeNodeState.bind(this);
-
+        this.onNodeSelected = this.onNodeSelected.bind(this);
         this.selectNext = this.selectNext.bind(this);
         this.selectPrevious = this.selectPrevious.bind(this);
         this.selectParent = this.selectParent.bind(this);
@@ -45,9 +50,35 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
         };
     }
 
-    public componentDidUpdate(prevProps: TreeProps): void {
+    public componentDidUpdate(prevProps: TreeProps, prevState: TreeClassState): void {
         if (prevProps.items !== this.props.items || prevProps.expandedKeys !== this.props.expandedKeys) {
             this.setTreeStructure();
+        }
+
+        if (prevState.height === undefined && this.state.height !== undefined) {
+            if (this.outerContainer.current) {
+                this.outerContainer.current.style.overflowX = 'scroll';
+            }
+        }
+    }
+
+    public componentDidMount(): void {
+        if (this.props.height === undefined && this.root.current) {
+            const parent = this.root.current.parentElement;
+
+            if (parent) {
+                this.sizeWatcher = watchElementSize(parent, (size: Size) => {
+                    this.setState({
+                        height: size.y,
+                    });
+                }, 50);
+            }
+        }
+    }
+
+    public componentWillUnmount(): void {
+        if (this.sizeWatcher) {
+            this.sizeWatcher.dispose();
         }
     }
 
@@ -62,15 +93,17 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
     }
 
     public render(): React.ReactNode {
+        const { height = this.state.height } = this.props;
+
         const { expandedKeys, selectedKey, loadingKeys, nodeHeight, getNodeClassName, getItemDragData, shouldAllowDrop, renderNodeIcon, renderNode } = this.props;
         return (
-            <DragContainer>
+            <DragContainer rootRef={this.root}>
                 {(isDragging: boolean) => {
                     const classes = classnames({
                         [styles.root]: true,
                         [styles.isDragging]: isDragging,
                     });
-                    return (
+                    return height !== undefined ? (
                         <div tabIndex={0} className={classes} onKeyDown={this.onKeyDown}>
                             <TreeNodeContext.Provider value={{
                                 getNodeClassName,
@@ -85,20 +118,26 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
                                 dragContext: this.state.dragContext,
                             }}>
                                 <List
+                                    overscanCount={5}
+                                    outerRef={this.outerContainer}
                                     ref={this.listRef}
-                                    height={500}
+                                    height={height}
                                     itemCount={this.state.treeStructure.flatNodes.length}
                                     itemSize={nodeHeight || 30}
                                     width={'auto'}
-                                    itemKey={this.getItemKey}
+                                    // itemKey={this.getItemKey}
                                     children={this.renderNode}
                                 />
                             </TreeNodeContext.Provider>
                         </div>
-                    );
+                    ) : null;
                 }}
             </DragContainer>
         );
+    }
+
+    public getTreeHelper(): TreeBuilder {
+        return this.state.treeStructure;
     }
 
     private setTreeStructure(): void {
@@ -134,7 +173,9 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
                 this.setLoading(node.id, false);
                 node.children = result;
                 node.item.children = result;
-                this.props.onItemsChanged([...this.props.items]);
+                if (this.props.onItemsChanged) {
+                    this.props.onItemsChanged([...this.props.items]);
+                }
             }).catch(() => {
                 this.setLoading(node.id, false);
             });
@@ -159,26 +200,32 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
     }
 
     private selectNext(): void {
-        const nextNode = this.state.treeStructure.getNextNode(this.props.selectedKey);
-        if (nextNode) {
-            this.props.onSelected(nextNode.id);
-            this.scrollTo(nextNode.id);
+        if (this.props.selectedKey) {
+            const nextNode = this.state.treeStructure.getNextNode(this.props.selectedKey);
+            if (nextNode) {
+                this.props.onSelected(nextNode.id, InputType.KEYBOARD);
+                this.scrollTo(nextNode.id);
+            }
         }
     }
 
     private selectPrevious(): void {
-        const prevNode = this.state.treeStructure.getPreviousNode(this.props.selectedKey);
-        if (prevNode) {
-            this.props.onSelected(prevNode.id);
-            this.scrollTo(prevNode.id);
+        if (this.props.selectedKey) {
+            const prevNode = this.state.treeStructure.getPreviousNode(this.props.selectedKey);
+            if (prevNode) {
+                this.props.onSelected(prevNode.id, InputType.KEYBOARD);
+                this.scrollTo(prevNode.id);
+            }
         }
     }
 
     private selectParent(): void {
-        const parentNode = this.state.treeStructure.getParentNode(this.props.selectedKey);
-        if (parentNode) {
-            this.props.onSelected(parentNode.id);
-            this.scrollTo(parentNode.id);
+        if (this.props.selectedKey) {
+            const parentNode = this.state.treeStructure.getParentNode(this.props.selectedKey);
+            if (parentNode) {
+                this.props.onSelected(parentNode.id, InputType.KEYBOARD);
+                this.scrollTo(parentNode.id);
+            }
         }
     }
 
@@ -227,7 +274,7 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
 
     private getTreeNodeState(id: string, children?: TreeItem[]): NodeState {
         const { loadingKeys, expandedKeys } = this.props;
-        if (loadingKeys[id] && !children) {
+        if (loadingKeys[id]) {
             return NodeState.LOADING;
         }
 
@@ -242,16 +289,32 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
         return NodeState.COLLAPSED;
     }
 
+    private onNodeSelected(id: string, event: InputEvent): void {
+        const touchEvent = event as TouchEvent;
+
+        if (touchEvent.touches) {
+            return this.props.onSelected(id, InputType.TOUCH);
+        }
+
+        const pointerEvent = event as PointerEvent;
+
+        if (pointerEvent.pointerId) {
+            return this.props.onSelected(id, InputType.POINTER);
+        }
+
+        this.props.onSelected(id, InputType.MOUSE);
+    }
+
     private renderNode({ index, style }: ListChildComponentProps): any {
-        const node = this.state.treeStructure.flatNodes[index];
         return (
             <div style={style}>
                 <TreeNodeContext.Consumer>
                     {(context: TreeNodeContextProps) => {
+                        const node = this.state.treeStructure.flatNodes[index];
                         return (
                             <TreeNode {...node}
                                 onToggleExpanded={this.onNodeToggleExpand}
-                                onSelected={this.props.onSelected}
+                                onSelected={this.onNodeSelected}
                                 nodeState={this.getTreeNodeState(node.id, node.children)}
                                 isSelected={context.selectedKey === node.id}
                                 height={context.height}
@@ -263,12 +326,18 @@ class Tree extends React.Component<TreeProps, TreeClassState> {
                                 dragContext={context.dragContext}
                                 renderNodeIcon={context.renderNodeIcon}
                                 renderNode={context.renderNode}
+                                title={this.renderNodeTitle(node.data)}
+                                isDraggable={false}
                             />
                         );
                     }}
                 </TreeNodeContext.Consumer>
             </div>
         );
+    }
+
+    private renderNodeTitle(data: any): React.ReactNode {
+        return this.props.renderTitle(data);
     }
 
     private getItemKey(index: number): string {

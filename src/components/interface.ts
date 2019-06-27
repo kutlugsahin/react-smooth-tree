@@ -4,10 +4,9 @@ import { ReactNode } from 'react';
 An empty array children means the node is leaf
 */
 export interface TreeItem {
-    title: React.ReactNode;
+    data: any;
     children?: TreeItem[];
     id: string;
-    draggable?: boolean;
 }
 
 export interface TreeNodeItem extends TreeItem {
@@ -32,7 +31,7 @@ export interface TreeItemNodeState {
 }
 export interface NodeRendererProps extends TreeItemNodeState {
     onToggleExpand: () => void;
-    onSelected: () => void;
+    onSelected: (event: InputEvent) => void;
     nodeIcon?: ReactNode;
     draggableProps?: any;
 }
@@ -47,7 +46,7 @@ export interface TreeNodeProps extends TreeNodeItem {
     isSelected: boolean;
     height: number;
     onRequestLoad: (id: string) => void;
-    onSelected: (id: string) => void;
+    onSelected: (id: string, event: InputEvent) => void;
     onToggleExpanded: (id: string) => void;
     getNodeClassName?: (props: TreeItemNodeState) => string;
     getItemDragData?: (item: TreeItem) => string;
@@ -56,10 +55,12 @@ export interface TreeNodeProps extends TreeNodeItem {
     dragContext?: DragContext;
     renderNodeIcon?: (state: NodeState, toggleExpand: () => void) => ReactNode;
     renderNode?: (props: NodeRendererProps) => React.ReactNode;
+    title: ReactNode;
+    isDraggable: boolean;
 }
 
 export interface TreeKeyProps {
-    selectedKey: string;
+    selectedKey: string | null | undefined;
     expandedKeys: KeySet;
     loadingKeys: KeySet;
 }
@@ -74,15 +75,24 @@ export interface TreeNodeContextProps extends TreeKeyProps {
     renderNode?: (props: NodeRendererProps) => React.ReactNode;
 }
 
+export enum InputType {
+    MOUSE,
+    KEYBOARD,
+    POINTER,
+    TOUCH,
+}
+
+export type InputEvent = MouseEvent | TouchEvent | PointerEvent;
+
 export interface TreeKeyChangedProps {
-    onSelected: (key: string) => void;
+    onSelected: (key: string, event: InputType) => void;
     onExpandedKeysChanged: (keySet: KeySet) => void;
     onLoadingKeysChanged: (keyset: KeySet) => void;
 }
 
 export interface TreeProps extends TreeKeyProps, TreeKeyChangedProps {
     items: TreeItem[];
-    onItemsChanged: (items: TreeItem[]) => void;
+    onItemsChanged?: (items: TreeItem[]) => void;
     renderNode?: (props: NodeRendererProps) => React.ReactNode;
     nodeHeight?: number;
     load?: (id: string) => Promise<TreeItem[]>;
@@ -90,6 +100,8 @@ export interface TreeProps extends TreeKeyProps, TreeKeyChangedProps {
     getItemDragData?: (item: TreeItem) => string;
     shouldAllowDrop?: (draggedItem: TreeItem, targetItem: TreeItem, data?: string) => boolean;
     renderNodeIcon?: (state: NodeState, toggleExpand: () => void) => ReactNode;
+    renderTitle: (data: any) => ReactNode;
+    height?: number;
 }
 
 export interface Dictionary<T> {
@@ -97,3 +109,14 @@ export interface Dictionary<T> {
 }
 
 export type KeySet = Dictionary<boolean>;
+
+export interface TreeBuilder {
+    flatNodes: TreeNodeItem[];
+    indexOf: (id: string) => number;
+    getNodeById: (id: string) => TreeNodeItem | undefined;
+    getNextNode: (id: string) => TreeNodeItem | undefined;
+    getPreviousNode: (id: string) => TreeNodeItem | undefined;
+    getParentNode: (id: string) => TreeNodeItem | undefined;
+}
+
+export type TreeBuilderFunction = (items: TreeItem[], expandedKeys: KeySet) => TreeBuilder;

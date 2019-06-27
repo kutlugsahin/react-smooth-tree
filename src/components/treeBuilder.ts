@@ -1,15 +1,4 @@
-import { Dictionary, KeySet, TreeItem, TreeNodeItem } from './interface';
-
-export interface TreeBuilder {
-    flatNodes: TreeNodeItem[];
-    indexOf: (id: string) => number;
-    getNodeById: (id: string) => TreeNodeItem | undefined;
-    getNextNode: (id: string) => TreeNodeItem | undefined;
-    getPreviousNode: (id: string) => TreeNodeItem | undefined;
-    getParentNode: (id: string) => TreeNodeItem | undefined;
-}
-
-export type TreeBuilderFunction = (items: TreeItem[], expandedKeys: KeySet) => TreeBuilder;
+import { Dictionary, KeySet, TreeBuilder, TreeBuilderFunction, TreeItem, TreeNodeItem } from './interface';
 
 export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], expandedKeys: KeySet): TreeBuilder => {
 
@@ -20,7 +9,6 @@ export const treeBuilder: TreeBuilderFunction = (items: TreeItem[], expandedKeys
     } as TreeNodeItem));
 
     const stack: TreeNodeItem[] = [...nodes];
-
     const flatNodes: TreeNodeItem[] = [];
     const nodeMap: Dictionary<TreeNodeItem> = {};
 
